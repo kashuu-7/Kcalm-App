@@ -11,7 +11,7 @@ export default function Home() {
   return (
     <>
     <BgGradient />
-    <div className="wrap max-w-[1200px] w-full mx-auto my-0 p-[40px]">
+    <div className="wrap max-w-[1200px] w-full mx-auto my-0 p-[40px] overflow-hidden">
       <Header />
       <Hero />
     </div>
