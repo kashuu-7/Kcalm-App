@@ -1,26 +1,285 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --matcha: #5FAE6E;
+  --butter: #FFF3CF;
+  --apricot: #F4A07E;
+  --shadow: 0 1px 2px rgba(29, 42, 34, .04), 0 18px 40px -22px rgba(29, 42, 34, .16);
+  --mx: 189px;
+  --my: 4.270843505859375px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --shadow-lg: 0 30px 70px -30px rgba(29, 42, 34, .35);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@property --ang {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes border {
+  to {
+    --ang: 360deg;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.glow-border {
+  position: relative;
+}
+
+.glow-border::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  /* border ki motai */
+  background: conic-gradient(from var(--ang),
+      var(--apricot, #f4a261),
+      transparent 30%,
+      var(--matcha, #8fbf8f),
+      transparent 70%,
+      var(--apricot, #f4a261));
+
+  /* sirf border wala hissa dikhao, andar ka hissa kaat do */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+
+  animation: border 5s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes drift1 {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  50% {
+    transform: translate(-30px, 25px);
+  }
+}
+
+@keyframes drift2 {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  50% {
+    transform: translate(35px, -30px);
+  }
+}
+
+@keyframes popin {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dietChange {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes breathe {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes sheen {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+@keyframes bob {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes tabProgress {
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes tick {
+  to {
+    stroke-dashoffset: 113;
+  }
+}
+
+@keyframes stepText {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes viewin {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+}
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes progressFill {
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: var(--progress-width);
+  }
+}
+
+@keyframes ringFill {
+  from {
+    stroke-dashoffset: 160.22;
+  }
+
+  to {
+    stroke-dashoffset: var(--ring-offset);
+  }
+}
+
+@keyframes greenRingFill {
+  from {
+    stroke-dashoffset: 496.37;
+  }
+
+  to {
+    stroke-dashoffset: 385.34;
+  }
+}
+
+@keyframes smallGreenRingFill {
+  from {
+    stroke-dashoffset: 449.25;
+  }
+
+  to {
+    stroke-dashoffset: 348.76;
+  }
+}
+
+@keyframes nutrientProgress {
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: var(--nutrient-width);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
