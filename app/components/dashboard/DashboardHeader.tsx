@@ -10,6 +10,7 @@ import { initials, useProfile } from "../profile/ProfileContext";
 import { Bricolage_Grotesque } from "next/font/google";
 import { useHelp } from "./HelpContext";
 import { ONBOARDING_STEPS } from "./onboarding";
+import ThemeToggle from "../theme/ThemeToggle";
 
 import SearchPalette from "./SearchPalette";
 import {
@@ -146,6 +147,7 @@ export default function DashboardHeader() {
       </div>
       <div className="flex items-center gap-[10px] ml-auto max-[600px]:w-full max-[600px]:ml-0">
         <SearchPalette />
+        <ThemeToggle />
         <div ref={notifRef} className="relative max-sm:static">
           <button
             type="button"

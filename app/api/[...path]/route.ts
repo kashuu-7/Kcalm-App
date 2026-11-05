@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 
 const API_URL = process.env.API_URL ?? "http://127.0.0.1:8001";
 const API_PREFIX = "/api/v1";
+export const maxDuration = 60;
+
 const ACCESS = "kcalm_token";
 const REFRESH = "kcalm_refresh";
 

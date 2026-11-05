@@ -283,3 +283,139 @@ html {
     opacity: 1;
   }
 }
+
+/* =====================================================================
+   DARK MODE  (paste at the very END of app/globals.css)
+   Sirf <html class="dark"> hone par chalta hai; light mode ko koi asar nahi.
+   Ye CSS component ke light classes ko override karti hai, isliye
+   components mein kuch badalna nahi padta.
+   ===================================================================== */
+html.dark { color-scheme: dark; }
+html.dark body { background: var(--k-bg); color: var(--k-ink); }
+
+.dark {
+  --k-bg: #0E1411;
+  --k-surface: #161E19;
+  --k-surface-2: #1F2923;
+  --k-surface-3: #27332C;
+  --k-ink: #E8EFEA;
+  --k-ink-65: rgba(232, 239, 234, 0.65);
+  --k-muted: #B0BBB3;
+  --k-ink-fill: #33433A;
+  --k-glass-hi: rgba(22, 30, 25, 0.82);
+  --k-glass-lo: rgba(22, 30, 25, 0.75);
+  --k-green: #1B2C21;   --k-green-2: #26402D;
+  --k-apricot: #35251C; --k-apricot-2: #4A3226;
+  --k-blue: #1A2B38;    --k-blue-2: #244052;
+  --k-lilac: #26233D;   --k-lilac-2: #352F55;
+  --k-pink: #38212A;    --k-pink-2: #4D2D39;
+  --k-yellow: #35301A;  --k-yellow-2: #4A4323;
+  --k-soft-green: #3D7A52;
+  --k-soft-apricot: #9A624A;
+  --k-t-green: #8FD3A1;
+  --k-t-apricot: #F2AA88;
+  --k-t-blue: #8CC6EC;
+  --k-t-lilac: #B8AEF2;
+  --k-t-pink: #F592A6;
+  --k-t-yellow: #F0CF6A;
+  --k-line-1: rgba(255, 255, 255, 0.09);
+  --k-line-2: rgba(255, 255, 255, 0.15);
+  --k-line-3: rgba(255, 255, 255, 0.26);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 18px 40px -22px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 30px 70px -30px rgba(0, 0, 0, 0.75);
+}
+
+/* Jin chhote cards ka background inline pastel rehta hai (grocery chips, nutrient
+   tiles, meal thumbnails), unke andar ke text/pills light-mode wale rang rakhte hain */
+.dark [style*="background"] {
+  --k-ink: #1D2A22; --k-ink-65: rgba(29, 42, 34, 0.65); --k-muted: #5B665F;
+  --k-surface: #FFFFFF; --k-glass-hi: rgba(255, 255, 255, 0.82); --k-glass-lo: rgba(255, 255, 255, 0.75);
+  --k-line-1: rgba(29, 42, 34, 0.08); --k-line-2: rgba(29, 42, 34, 0.14);
+  --k-t-green: #2E6B3E; --k-t-apricot: #A4502B; --k-t-blue: #2B6A93;
+  --k-t-lilac: #6457B0; --k-t-pink: #C2415C; --k-t-yellow: #A77B00;
+}
+/* Meal ki gradient thumbnails thori dim */
+.dark [style*="gradient"] { background-color: #8A948D !important; background-blend-mode: multiply; }
+
+/* ---------- Tailwind classes ka dark version ---------- */
+.dark [class~="bg-[rgba(29,42,34,0.06)]" i] { background-color:rgba(255,255,255,0.07); }
+.dark [class~="bg-[#1d2a2214]" i] { background-color:rgba(255,255,255,0.09); }
+.dark [class~="bg-[#1d2a2224]" i] { background-color:rgba(255,255,255,0.16); }
+.dark :is([class~="bg-[#FFEFE7]" i], [class~="bg-[#FDF0E9]" i]) { background-color:var(--k-apricot); }
+.dark :is([class~="bg-[#F1C9BA]" i], [class~="bg-[#F8DCC8]" i]) { background-color:var(--k-apricot-2); }
+.dark [class~="bg-[#F8FAF8]" i] { background-color:var(--k-bg); }
+.dark :is([class~="bg-[#E7F3FC]" i], [class~="bg-[#EBF4FB]" i], [class~="bg-[#E8F2FB]" i]) { background-color:var(--k-blue); }
+.dark :is([class~="bg-[#ffffffd1]" i], [class~="bg-white/80" i], [class~="bg-white/95" i], [class~="bg-[rgba(255,255,255,0.82)]" i], [class~="bg-white/90" i], [class~="bg-[#ffffffcc]" i], [class~="bg-[#ffffffe6]" i], [class~="bg-[#ffffffeb]" i]) { background-color:var(--k-glass-hi); }
+.dark :is([class~="bg-[#ffffffbf]" i], [class~="bg-white/70" i]) { background-color:var(--k-glass-lo); }
+.dark :is([class~="bg-[#E9F6EC]" i], [class~="bg-[#F4FAF5]" i], [class~="bg-[#EEF8F0]" i]) { background-color:var(--k-green); }
+.dark [class~="bg-[#DDE8CC]" i] { background-color:var(--k-green-2); }
+.dark [class~="bg-[#1d2a22]" i] { background-color:var(--k-ink-fill); }
+.dark [class~="bg-[#F0EDFD]" i] { background-color:var(--k-lilac); }
+.dark :is([class~="bg-[#FCE4EA]" i], [class~="bg-[#FDE8EC]" i], [class~="bg-[#FCE9ED]" i], [class~="bg-[#FCE9EE]" i]) { background-color:var(--k-pink); }
+.dark [class~="bg-[#F4C3AA]" i] { background-color:var(--k-soft-apricot); }
+.dark [class~="bg-[#D5EEDA]" i] { background-color:var(--k-soft-green); }
+.dark :is([class~="bg-[#FAFBFA]" i], [class~="bg-[#ffffff]" i], [class~="bg-white" i], [class~="bg-[#F8FAF9]" i], [class~="bg-[#fff]" i]) { background-color:var(--k-surface); }
+.dark :is([class~="bg-[#EEF1EE]" i], [class~="bg-[#F2F5F2]" i]) { background-color:var(--k-surface-2); }
+.dark :is([class~="bg-[#FFF3CF]" i], [class~="bg-[#FFF4D8]" i], [class~="bg-[#FFF5DB]" i]) { background-color:var(--k-yellow-2); }
+.dark [class~="bg-[linear-gradient(120deg,#e9f6ec,#f0edfd)]" i] { background-image:linear-gradient(120deg,var(--k-green),var(--k-lilac)); }
+.dark [class~="bg-[linear-gradient(135deg,#F7C9B4,#CFE9C8)]" i] { background-image:linear-gradient(135deg,var(--k-apricot-2),var(--k-soft-green)); }
+.dark [class~="bg-[linear-gradient(135deg,#E9F6EC,#F0EDFD_55%,#FFEFE7)]" i] { background-image:linear-gradient(135deg,var(--k-green),var(--k-lilac) 55%,var(--k-apricot)); }
+.dark [class~="bg-[linear-gradient(150deg,#e9f6ec,#f0edfd)]" i] { background-image:linear-gradient(150deg,var(--k-green),var(--k-lilac)); }
+.dark :is([class~="bg-[linear-gradient(160deg,#e9f6ec,#fff)]" i], [class~="bg-[linear-gradient(160deg,#F1F9F3,#FFFFFF)]" i]) { background-image:linear-gradient(160deg,var(--k-green),var(--k-surface)); }
+.dark [class~="bg-[linear-gradient(180deg,#1d2a2224,transparent_85%)]" i] { background-image:linear-gradient(180deg,rgba(255,255,255,0.16),transparent 85%); }
+.dark [class~="bg-[linear-gradient(180deg,#e9f6ec,#ffffff_45%)]" i] { background-image:linear-gradient(180deg,var(--k-green),var(--k-surface) 45%); }
+.dark [class~="bg-[linear-gradient(180deg,#E9F6EC,#ffffff)]" i] { background-image:linear-gradient(180deg,var(--k-green),var(--k-surface)); }
+.dark [class~="bg-[linear-gradient(#f8faf8_70%,transparent)]" i] { background-image:linear-gradient(var(--k-bg) 70%,transparent); }
+.dark [class~="bg-[radial-gradient(120%_90%_at_50%_110%,_#F7E6D2_0_40%,_transparent_41%),linear-gradient(180deg,#FBF6EF,#F4EBDF)]" i] { background-image:radial-gradient(120% 90% at 50% 110%, var(--k-apricot-2) 0 40%, transparent 41%),linear-gradient(180deg,var(--k-apricot),var(--k-apricot-2)); }
+.dark [class~="bg-[image:radial-gradient(60%_80%_at_10%_0%,#ffefe7,transparent_70%),radial-gradient(60%_80%_at_90%_100%,#f0edfd,transparent_70%)]" i] { background-image:radial-gradient(60% 80% at 10% 0%,var(--k-apricot),transparent 70%),radial-gradient(60% 80% at 90% 100%,var(--k-lilac),transparent 70%); }
+.dark [class~="bg-[radial-gradient(70%_90%_at_100%_0%,#f0edfd,transparent_70%),radial-gradient(60%_80%_at_0%_100%,#e7f3fc,transparent_70%),#fafbfa]" i] { background-image:radial-gradient(70% 90% at 100% 0%,var(--k-lilac),transparent 70%),radial-gradient(60% 80% at 0% 100%,var(--k-blue),transparent 70%),var(--k-surface); }
+.dark [class~="bg-[radial-gradient(circle_at_50%_50%,#FFEFE7_0%,transparent_65%)]" i] { background-image:radial-gradient(circle at 50% 50%,var(--k-apricot) 0%,transparent 65%); }
+.dark [class~="bg-[radial-gradient(circle,#F0EDFD,transparent_65%)]" i] { background-image:radial-gradient(circle,var(--k-lilac),transparent 65%); }
+.dark [class~="bg-[repeating-linear-gradient(45deg,#f2f5f2_0_3px,#fff_3px_6px)]" i] { background-image:repeating-linear-gradient(45deg,var(--k-surface-2) 0 3px,var(--k-surface) 3px 6px); }
+.dark :is([class~="border-[#1d2a2214]" i], [class~="border-[rgba(29,42,34,0.08)]" i]) { border-color:var(--k-line-1); }
+.dark :is([class~="border-[#1d2a2224]" i], [class~="border-[#D5EEDA]" i], [class~="border-[#CFE9C8]" i], [class~="border-[#CFE3F5]" i], [class~="border-[#F7D3C0]" i]) { border-color:var(--k-line-2); }
+.dark [class~="border-[#1d2a2240]" i] { border-color:var(--k-line-3); }
+.dark :is([class~="border-white" i], [class~="border-[#ffffff]" i]) { border-color:var(--k-surface); }
+.dark :is([class~="text-[#1D2A22]" i], [class~="text-[#2A2A20]" i], [class~="text-[#2A1C12]" i]) { color:var(--k-ink); }
+.dark [class~="text-[#1d2a22a6]" i] { color:var(--k-ink-65); }
+.dark [class~="text-[#5B665F]" i] { color:var(--k-muted); }
+.dark :is([class~="text-[#7A3E1A]" i], [class~="text-[#C0683F]" i], [class~="text-[#A4502B]" i], [class~="text-[#B8633A]" i], [class~="text-[#B75D3B]" i], [class~="text-[#C2582B]" i]) { color:var(--k-t-apricot); }
+.dark :is([class~="text-[#3A7AA3]" i], [class~="text-[#2B6A93]" i], [class~="text-[#3F8FC4]" i]) { color:var(--k-t-blue); }
+.dark :is([class~="text-[#2E6B3E]" i], [class~="text-[#5FAE6E]" i], [class~="text-[#4E9E5C]" i]) { color:var(--k-t-green); }
+.dark [class~="text-[#6457B0]" i] { color:var(--k-t-lilac); }
+.dark :is([class~="text-[#A3263D]" i], [class~="text-[#C2415C]" i]) { color:var(--k-t-pink); }
+.dark :is([class~="text-[#4A3B12]" i], [class~="text-[#7A5B10]" i], [class~="text-[#E2B232]" i], [class~="text-[#A77B00]" i], [class~="text-[#C2912B]" i]) { color:var(--k-t-yellow); }
+.dark [class~="before:bg-[radial-gradient(420px_circle_at_691.5px_50%_26px_50%,#FFEFE7,transparent_60%)]" i]::before { background-image:radial-gradient(420px circle at 691.5px 50% 26px 50%,var(--k-apricot),transparent 60%); }
+.dark [class~="before:bg-[radial-gradient(420px_circle_at_var(--mx,_50%)_var(--my,_50%),#FFEFE7,transparent_60%)]" i]::before { background-image:radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%),var(--k-apricot),transparent 60%); }
+.dark [class~="disabled:hover:bg-white" i]:disabled:hover { background-color:var(--k-surface); }
+.dark [class~="hover:bg-[rgba(29,42,34,0.06)]" i]:hover { background-color:rgba(255,255,255,0.07); }
+.dark [class~="hover:bg-[rgba(29,42,34,0.08)]" i]:hover { background-color:rgba(255,255,255,0.09); }
+.dark [class~="hover:bg-[rgba(29,42,34,0.1)]" i]:hover { background-color:rgba(255,255,255,0.11); }
+.dark [class~="hover:bg-[#E9F6EC]" i]:hover { background-color:var(--k-green); }
+.dark :is([class~="hover:bg-[#FAFBFA]" i], [class~="hover:bg-[#F2F5F2]" i], [class~="hover:bg-[#F7F9F7]" i], [class~="hover:bg-[#F8FAF8]" i], [class~="hover:bg-[#F7FAF7]" i], [class~="hover:bg-[#F5F7F5]" i]):hover { background-color:var(--k-surface-3); }
+.dark [class~="hover:border-[#1d2a2224]" i]:hover { border-color:var(--k-line-2); }
+.dark [class~="hover:text-[#1D2A22]" i]:hover { color:var(--k-ink); }
+.dark .peer:checked ~ [class~="peer-checked:bg-[#E9F6EC]" i] { background-color:var(--k-green); }
+.dark .peer:checked ~ [class~="peer-checked:text-[#2E6B3E]" i] { color:var(--k-t-green); }
+
+/* ---------- Compound fixes: accent background par dark text ---------- */
+.dark [class~="bg-[#4E9E5C]" i][class~="text-[#2E6B3E]" i] { color: #2E6B3E; }
+.dark [class~="bg-[#F1DB9C]" i][class~="text-[#2A2A20]" i] { color: #2A2A20; }
+.dark [class~="bg-[#F4A07E]" i][class~="text-[#2A1C12]" i] { color: #2A1C12; }
+
+/* ---------- Range sliders (calibration) ---------- */
+.dark [class~="[&::-webkit-slider-runnable-track]:bg-[linear-gradient(to_right,#4E9E5C_var(--p),#1d2a2224_var(--p))]" i]::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, #4E9E5C var(--p), rgba(255, 255, 255, 0.16) var(--p));
+}
+.dark [class~="[&::-moz-range-track]:bg-[#1d2a2224]" i]::-moz-range-track { background: rgba(255, 255, 255, 0.16); }
+
+/* ---------- SVG charts ---------- */
+.dark :is([stroke="#1D2A22" i]) { stroke: var(--k-ink); }
+.dark :is([fill="#1D2A22" i]) { fill: var(--k-ink); }
+.dark [stroke="#1d2a2214" i] { stroke: var(--k-line-1); }
+.dark [stroke="#E9F6EC" i] { stroke: var(--k-green-2); }
+.dark [stroke="#F2F5F2" i] { stroke: var(--k-surface-3); }
+.dark :is([fill="#CDE8D1" i], [fill="#CFE9C8" i]) { fill: var(--k-soft-green); }
+.dark [fill="#F4C3AA" i] { fill: var(--k-soft-apricot); }
+.dark [fill="#B8633A" i] { fill: var(--k-t-apricot); }
+.dark [fill="#fff" i] { fill: var(--k-surface); }
