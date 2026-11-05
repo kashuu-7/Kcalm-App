@@ -93,7 +93,7 @@ export default function Download() {
               placeholder="Enter your email"
               className="flex-1 min-w-[200px] max-sm:min-w-0 max-sm:w-full py-[14px] px-[18px] rounded-full border-[2px] border-[#1d2a2224] bg-white font-[inherit] text-[#1d2a22] transition-[border-color] duration-300 focus:border-[#5fae6e] focus:outline-none"
             />
-            <button className="group max-sm:w-full max-sm:justify-center py-[13px] px-[22px] text-[15px] bg-[#2E6B3E] text-[#ffffff] shadow-[0_10px_26px_-12px_rgba(46,107,62,0.55)] inline-flex items-center gap-[10px] rounded-full font-[500] transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] hover:-translate-y-[2px] hover:shadow-[0_16px_34px_-12px_rgba(46,107,62,0.6)]">
+            <button className="group max-sm:w-full max-sm:justify-center py-[13px] px-[22px] text-[15px] bg-[#2E6B3E] text-[#ffffff] shadow-[0_10px_26px_-12px_rgba(46,107,62,0.55)] inline-flex items-center gap-[10px] rounded-full font-[500] transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] hover:shadow-[0_16px_34px_-12px_rgba(46,107,62,0.6)]">
               Join waitlist
               <span className="w-[26px] h-[26px] rounded-full bg-[#FFEFE7] text-[#1D2A22] grid place-items-center transition-transform duration-350 group-hover:rotate-[-45deg]">
                 →

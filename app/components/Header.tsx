@@ -15,7 +15,7 @@ const LINKS = [
 export default function Header() {
   const [open, setOpen] = useState(false);
   const { status } = useAuth();
-const loggedIn = status === "authenticated";
+  const loggedIn = status === "authenticated";
 
   return (
     <header className="sticky top-[10px] md:top-[14px] z-50 mt-[10px] md:mt-[14px]">
@@ -45,22 +45,23 @@ const loggedIn = status === "authenticated";
 
           {/* Desktop log in */}
           <Link
-  href={loggedIn ? "/dashboard" : "/login"}
-  className="hidden md:block text-[#5B665F] text-[14px] hover:text-[#1D2A22] transition-colors"
->
-  {loggedIn ? "Login" : "Log in"}
-</Link>
+            href={loggedIn ? "/dashboard" : "/login"}
+            className="hidden md:block text-[#5B665F] text-[14px] hover:text-[#1D2A22] transition-colors"
+          >
+            {loggedIn ? "Login" : "Log in"}
+          </Link>
 
           {/* CTA (mobile pe ml-auto se right pe jata hai) */}
-          <Link href={loggedIn ? "/dashboard" : "/signup"}
-            className="group ml-auto md:ml-0 py-[8px] md:py-[10px] pr-[8px] md:pr-[12px] pl-[14px] md:pl-[18px] text-[13px] md:text-[14px] bg-[#2E6B3E] text-[#ffffff] shadow-[0_10px_26px_-12px_rgba(46,107,62,0.55)] inline-flex items-center gap-[8px] md:gap-[10px] rounded-full font-[500] whitespace-nowrap transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] hover:-translate-y-[2px] hover:shadow-[0_16px_34px_-12px_rgba(46,107,62,0.6)]"
+          <Link
+            href={loggedIn ? "/dashboard" : "/signup"}
+            className="group ml-auto md:ml-0 py-[8px] md:py-[10px] pr-[8px] md:pr-[12px] pl-[14px] md:pl-[18px] text-[13px] md:text-[14px] bg-[#2E6B3E] text-[#ffffff] shadow-[0_10px_26px_-12px_rgba(46,107,62,0.55)] inline-flex items-center gap-[8px] md:gap-[10px] rounded-full font-[500] whitespace-nowrap transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] hover:shadow-[0_16px_34px_-12px_rgba(46,107,62,0.6)]"
           >
             <span className="hidden min-[400px]:inline">
-  {loggedIn ? "Open dashboard" : "Get started free"}
-</span>
-<span className="min-[400px]:hidden">
-  {loggedIn ? "Dashboard" : "Get started"}
-</span>
+              {loggedIn ? "Open dashboard" : "Get started free"}
+            </span>
+            <span className="min-[400px]:hidden">
+              {loggedIn ? "Dashboard" : "Get started"}
+            </span>
             <span className="w-[24px] h-[24px] md:w-[26px] md:h-[26px] rounded-full bg-[#FFEFE7] text-[#1D2A22] grid place-items-center transition-transform duration-350 group-hover:rotate-[-45deg]">
               →
             </span>
@@ -99,12 +100,12 @@ const loggedIn = status === "authenticated";
             ))}
             <div className="h-px bg-[#1d2a2214] my-[6px] mx-[16px]" />
             <Link
-  href={loggedIn ? "/dashboard" : "/login"}
-  onClick={() => setOpen(false)}
-  className="text-[#5B665F] py-[13px] px-[16px] rounded-[18px] text-[16px] hover:bg-[rgba(29,42,34,0.06)] transition-colors"
->
-  {loggedIn ? "Dashboard" : "Log in"}
-</Link>
+              href={loggedIn ? "/dashboard" : "/login"}
+              onClick={() => setOpen(false)}
+              className="text-[#5B665F] py-[13px] px-[16px] rounded-[18px] text-[16px] hover:bg-[rgba(29,42,34,0.06)] transition-colors"
+            >
+              {loggedIn ? "Dashboard" : "Log in"}
+            </Link>
           </nav>
         </div>
       </div>

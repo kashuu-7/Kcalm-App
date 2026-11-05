@@ -94,9 +94,6 @@ export default function InsightTop() {
             <h3 className={`${bricolage.className} text-[18px] font-semibold tracking-[-.03em] leading-[1.1] text-balance`}>
                 {profile.name}
             </h3>
-            <small className="text-[#8E978F] ">
-                {profile.email}
-            </small>
             <div className="mt-[6px]">
                 <span className="  bg-[#E9F6EC] text-[#2E6B3E] inline-flex items-center gap-1.5 text-xs py-1 px-2.5 rounded-full whitespace-nowrap ">
                     Premium member

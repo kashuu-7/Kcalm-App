@@ -30,7 +30,7 @@ export default function CalmerWay() {
       <p className="relative z-[1] text-[#5B665F] max-w-[487px] mt-[20px] m-auto">
         Set your goal in two minutes. Your first week of meals is ready right after.
       </p>
-      <Link href="/signup" className="group mt-[34px] relative z-[1] inline-flex items-center gap-[10px] py-[14px] px-[22px] rounded-[16px] bg-[#2E6B3E] text-[#ffffff] shadow-[0_10px_26px_-12px_rgba(46,107,62,0.55)] inline-flex items-center gap-[10px] rounded-full font-[500] transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] hover:-translate-y-[2px] hover:shadow-[0_16px_34px_-12px_rgba(46,107,62,0.6)]">
+      <Link href="/signup" className="group mt-[34px] relative z-[1] inline-flex items-center gap-[10px] py-[14px] px-[22px] rounded-[16px] bg-[#2E6B3E] text-[#ffffff] shadow-[0_10px_26px_-12px_rgba(46,107,62,0.55)] inline-flex items-center gap-[10px] rounded-full font-[500] transition-[transform,box-shadow,background] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] hover:shadow-[0_16px_34px_-12px_rgba(46,107,62,0.6)]">
         Get started free
         <span className="w-[26px] h-[26px] rounded-full bg-[#FFEFE7] text-[#1D2A22] grid place-items-center transition-transform duration-350 group-hover:rotate-[-45deg]">
             →
