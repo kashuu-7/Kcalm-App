@@ -6,7 +6,8 @@ import { useAuth } from "../auth/AuthContext";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import NotificationList from "./NotificationList";
 import { refreshNotifications, useNotifications } from "./notificationsStore";
-import { initials, useProfile } from "../profile/ProfileContext";
+import { useProfile } from "../profile/ProfileContext";
+import Avatar from "../profile/Avatar";
 import { Bricolage_Grotesque } from "next/font/google";
 import { useHelp } from "./HelpContext";
 import { ONBOARDING_STEPS } from "./onboarding";
@@ -178,9 +179,7 @@ export default function DashboardHeader() {
             onClick={() => setShowProfileMenu((prev) => !prev)}
             className="flex items-center gap-[10px] bg-white border border-[#1d2a2214] rounded-full py-[5px] pr-[14px] pl-[5px] max-sm:pr-[5px] shadow-[var(--shadow)] font-medium text-sm"
           >
-            <span className="w-[34px] h-[34px] rounded-full bg-[linear-gradient(135deg,#F7C9B4,#CFE9C8)] grid place-items-center font-semibold text-[13px] text-[#1d2a22] flex-none">
-              {initials(profile.name)}
-            </span>
+                        <Avatar name={profile.name} className="w-[34px] h-[34px]" textClass="text-[13px]" />
 
             <span className="block max-[940px]:hidden">{profile.name}</span>
             <ChevronDown size={12} className="text-[#8E978F]" />
@@ -190,9 +189,7 @@ export default function DashboardHeader() {
             <div>
               <div className="absolute right-0 top-[calc(100%_+_8px)] bg-white border border-[#1d2a2214] rounded-[18px] shadow-[var(--shadow-lg)] p-2 min-w-[240px] z-[60] origin-top-right animate-[popin_.25s_var(--ease)]">
                 <div className="flex gap-[10px] items-center pt-[8px] px-[10px] pb-[12px] border-b border-[#1d2a2214] mb-[6px]">
-                  <span className="w-[34px] h-[34px] rounded-full bg-[linear-gradient(135deg,#F7C9B4,#CFE9C8)] grid place-items-center font-semibold text-[13px] text-[#1d2a22] flex-none">
-                    {initials(profile.name)}
-                  </span>
+                                    <Avatar name={profile.name} className="w-[34px] h-[34px]" textClass="text-[13px]" />
 
                   <div className="text-[13.5px]">
                     <b>{profile.name}</b>

@@ -2,7 +2,8 @@
 
 import { BarChart3, Flame, Target, type LucideIcon } from "lucide-react";
 import { Bricolage_Grotesque } from "next/font/google";
-import { initials, useProfile, } from "../profile/ProfileContext";
+import { useProfile } from "../profile/ProfileContext";
+import Avatar from "../profile/Avatar";
 import { useEffect, useState } from "react";
 import { fetchNutritionSummary } from "../../lib/api/tracking";
 
@@ -87,9 +88,11 @@ export default function InsightTop() {
       
 {/* Article 4 */}
       <article className="flex flex-wrap max-[1050px]:col-span-full items-center gap-[16px] bg-[#ffffff] border border-[#1d2a2214] rounded-[24px] p-[22px] shadow-[var(--shadow)] min-w-0">
-        <span className={`${bricolage.className} w-[60px] h-[60px] text-[20px] rounded-[50%] bg-[linear-gradient(135deg,#F7C9B4,#CFE9C8)] grid place-items-center font-semibold text-[#1D2A22] `}>
-            {initials(profile.name)}
-        </span>
+                <Avatar
+          name={profile.name}
+          className="w-[60px] h-[60px]"
+          textClass={`${bricolage.className} text-[20px]`}
+        />
         <div className="flex-1 min-w-[140px] ">
             <h3 className={`${bricolage.className} text-[18px] font-semibold tracking-[-.03em] leading-[1.1] text-balance`}>
                 {profile.name}
