@@ -12,7 +12,7 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export default function Timeline() {
-  const { slots, meals, logged, activeIndex, toggleLogged, openSwap } =
+  const { slots, meals, logged, activeIndex, toggleLogged, openSwap, error, retry } =
   useMeals("today");
 
   return (
@@ -38,6 +38,15 @@ export default function Timeline() {
           </Link>
         </div>
       </div>
+
+      {error && (
+        <div role="alert" className="mb-[14px] rounded-[14px] bg-[#FFEFE7] px-[14px] py-[12px] text-[13px] text-[#A4502B]">
+          <p>{error}</p>
+          <button type="button" onClick={retry} className="mt-[8px] font-medium underline underline-offset-2">
+            Try again
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-4 max-[940px]:grid-cols-2 max-sm:grid-cols-1 gap-[16px] max-sm:gap-[22px]">
         {meals.map((meal, i) => {

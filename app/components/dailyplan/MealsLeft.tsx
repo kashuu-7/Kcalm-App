@@ -24,6 +24,8 @@ export default function MealsLeft() {
     snacks,
     activeIndex,
     dayTitle,
+    error,
+    retry,
     toggleLogged,
     openSwap,
     removeSnack,
@@ -114,6 +116,14 @@ export default function MealsLeft() {
         </div>
 
         <div className="relative grid gap-[12px] ">
+          {error && (
+            <div role="alert" className="rounded-[14px] bg-[#FFEFE7] px-[14px] py-[12px] text-[13px] text-[#A4502B]">
+              <p>{error}</p>
+              <button type="button" onClick={retry} className="mt-[8px] font-medium underline underline-offset-2">
+                Try again
+              </button>
+            </div>
+          )}
           <span className="absolute left-[99px] max-sm:left-[75px] top-[30px] bottom-[30px] w-[2px] bg-[#D5EEDA] max-[600px]:hidden "></span>
 
           {meals.map((meal, i) => {

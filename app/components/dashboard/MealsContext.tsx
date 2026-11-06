@@ -119,6 +119,7 @@ function dayWord(offset: number) {
 let state: State = INITIAL_STATE;
 let ownerKey: string | null = null;
 const inflight = new Set<string>();
+const dayRequestIds = new Map<string, number>();
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -133,6 +134,7 @@ function syncOwner() {
   state = INITIAL_STATE;
   lastSlotTypes = DEFAULT_SLOT_TYPES;
   inflight.clear();
+  dayRequestIds.clear();
 }
 
 function putDay(key: string, day: DayData) {
@@ -169,6 +171,8 @@ async function buildSlots(plan: api.MealPlan) {
 
 async function loadDay(offset: number) {
   const key = dayKey(offset);
+  const requestId = (dayRequestIds.get(key) ?? 0) + 1;
+  dayRequestIds.set(key, requestId);
   inflight.add(key);
   putDay(key, emptyDay("loading"));
   try {
@@ -188,6 +192,7 @@ async function loadDay(offset: number) {
     } = plan ? await buildSlots(plan) : { slots: [], meals: [], itemIds: [] };
     const logged = built.itemIds.map((id) => (id ? loggedIds.includes(id) : false));
 
+    if (dayRequestIds.get(key) !== requestId) return;
     putDay(key, {
       status: "ready",
       planId: plan?.meal_plan_id ?? null,
@@ -199,9 +204,65 @@ async function loadDay(offset: number) {
       error: null,
     });
   } catch (e) {
-    putDay(key, emptyDay("error", errorMessage(e)));
+    if (dayRequestIds.get(key) === requestId) {
+      putDay(key, emptyDay("error", errorMessage(e)));
+    }
   } finally {
-    inflight.delete(key);
+    if (dayRequestIds.get(key) === requestId) inflight.delete(key);
+  }
+}
+
+/** Schedule profile update ke baad active today's plan fresh generate karo. */
+export async function refreshTodayPlanAfterScheduleChange(): Promise<void> {
+  syncOwner();
+  api.invalidateWeeklyPlanCache();
+  const key = dayKey(0);
+  // Backend schedule changes archive today and future plans; drop those cached snapshots too.
+  for (const cachedKey of Object.keys(state.days)) {
+    if (cachedKey < key) continue;
+    dayRequestIds.set(cachedKey, (dayRequestIds.get(cachedKey) ?? 0) + 1);
+    inflight.delete(cachedKey);
+  }
+  state = {
+    ...state,
+    days: Object.fromEntries(
+      Object.entries(state.days).filter(([cachedKey]) => cachedKey < key),
+    ),
+  };
+  lastSlotTypes = DEFAULT_SLOT_TYPES;
+  emit();
+  const requestId = (dayRequestIds.get(key) ?? 0) + 1;
+  dayRequestIds.set(key, requestId);
+  inflight.add(key);
+  putDay(key, emptyDay("loading"));
+
+  try {
+    // Direct POST: updated profile se backend slots/times chunta hai. Archived plan IDs ko read nahi karte.
+    const plan = await api.createDailyPlan(key);
+    const [loggedIds, snacks, built] = await Promise.all([
+      api.fetchPlanLogs(plan.meal_plan_id),
+      api.fetchSnacks(key),
+      buildSlots(plan),
+    ]);
+    if (dayRequestIds.get(key) !== requestId) return;
+    const logged = built.itemIds.map((id) => Boolean(id && loggedIds.includes(id)));
+    putDay(key, {
+      status: "ready",
+      planId: plan.meal_plan_id,
+      slots: built.slots,
+      itemIds: built.itemIds,
+      meals: built.meals,
+      logged,
+      snacks,
+      error: null,
+    });
+  } catch (e) {
+    if (dayRequestIds.get(key) === requestId) {
+      // Purana (ab archived) plan active state mein restore nahi hota.
+      putDay(key, emptyDay("error", errorMessage(e)));
+    }
+  } finally {
+    if (dayRequestIds.get(key) === requestId) inflight.delete(key);
   }
 }
 
@@ -399,6 +460,7 @@ function placeholder(slot: MealSlot, status: DayStatus): Meal {
 // Plan hai to uske slots, nahi to khali cards ke slots (waqt "—")
 function resolveSlots(day: DayData): MealSlot[] {
   if (day.slots.length > 0) return day.slots;
+  if (day.status === "error") return [];
   return lastSlotTypes.map((t) => ({ id: t, time: "—", type: api.slotLabel(t) }));
 }
 
@@ -436,6 +498,7 @@ export function useMeals(which: "view" | "today" = "view") {
     dayTitle: dayTitle(offset),
     loading: day.status === "loading",
     error: day.error,
+    retry: () => void loadDay(offset),
     toggleLogged: (i: number) => void toggleLogged(offset, i),
     openSwap: (i: number) => void openSwapModal(offset, i),
     openSwapList: () => openModal({ type: "swap-list", offset }),

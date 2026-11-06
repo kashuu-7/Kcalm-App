@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Bricolage_Grotesque, Instrument_Serif } from "next/font/google";
 import { userKey } from "../../../lib/userStorage";
 import { detectTimezone, fetchDaySettings } from "../../../lib/api/profile";
+import { useProfile } from "../../../components/profile/ProfileContext";
 import {
   Check,
   ChevronLeft,
@@ -257,22 +258,20 @@ function LabeledBox({
 
 export default function AboutPage() {
   const router = useRouter();
+  const { profile, saveProfile } = useProfile();
   const [form, setForm] = useState<Form>(DEFAULTS);
   const [tzList, setTzList] = useState<string[]>([]);
   const [dayError, setDayError] = useState<string | null>(null);
+  const [savingExit, setSavingExit] = useState(false);
 
-  // Back se wapas aao to pehle ka jawab dikhe. Naye schedule ke jawab na hon to
-  // backend se (returning user), warna browser ka timezone.
+  // Non-schedule answers browser se restore karo; persisted schedule backend se authoritative hai.
   /* eslint-disable react-hooks/set-state-in-effect -- Restore the saved form after hydration. */
   useEffect(() => {
     let cancelled = false;
-    let hasSchedule = false;
-
     try {
       const raw = localStorage.getItem(userKey(STORAGE_KEY));
       if (raw) {
         const saved = JSON.parse(raw);
-        hasSchedule = typeof saved?.wake === "string";
         setForm((f) => ({ ...f, ...saved }));
       }
     } catch {
@@ -282,24 +281,20 @@ export default function AboutPage() {
     const detected = detectTimezone();
     setTzList(timezoneList());
 
-    if (hasSchedule) {
-      setForm((f) => ({ ...f, timezone: f.timezone || detected }));
-    } else {
-      fetchDaySettings().then((s) => {
-        if (cancelled) return;
-        if (s) {
-          setForm((f) => ({
-            ...f,
-            wake: s.wake,
-            sleep: s.sleep,
-            timezone: s.timezone,
-            meals: s.meals,
-          }));
-        } else {
-          setForm((f) => ({ ...f, timezone: f.timezone || detected }));
-        }
-      });
-    }
+    fetchDaySettings().then((s) => {
+      if (cancelled) return;
+      if (s) {
+        setForm((f) => ({
+          ...f,
+          wake: s.wake,
+          sleep: s.sleep,
+          timezone: s.timezone,
+          meals: s.meals,
+        }));
+      } else {
+        setForm((f) => ({ ...f, timezone: f.timezone || detected }));
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -355,6 +350,78 @@ export default function AboutPage() {
     router.push(ONBOARDING_STEPS[2].href);
   };
 
+  const onSaveAndExit = async () => {
+    if (!timeOk(form.wake) || !timeOk(form.sleep)) {
+      setDayError("Please enter both your wake-up time and your sleep time.");
+      return;
+    }
+    if (form.wake === form.sleep) {
+      setDayError("Your wake-up and sleep times can't be the same.");
+      return;
+    }
+    if (!form.timezone) {
+      setDayError("Please choose your timezone.");
+      return;
+    }
+
+    let calibration: Record<string, unknown> | null = null;
+    try {
+      const raw = localStorage.getItem(userKey("kcalm-calibration"));
+      calibration = raw ? JSON.parse(raw) : null;
+    } catch {
+      calibration = null;
+    }
+
+    const numberOr = (value: unknown, fallback: number) => {
+      const n = typeof value === "number" ? value : Number(value);
+      return Number.isFinite(n) && n > 0 ? n : fallback;
+    };
+    const goal = form.goal === "lose" ? "Lose weight" : form.goal === "build" ? "Gain weight" : "Maintain weight";
+    const nextProfile = {
+      ...profile,
+      name: typeof calibration?.name === "string" && calibration.name.trim()
+        ? calibration.name.trim()
+        : profile.name,
+      sex:
+        calibration?.sex === "Female"
+          ? "Female"
+          : calibration?.sex === "Male"
+            ? "Male"
+            : profile.sex,
+      age: numberOr(calibration?.age, profile.age),
+      height: numberOr(calibration?.height, profile.height),
+      weight: numberOr(calibration?.weight, profile.weight),
+      goal,
+    };
+
+    setSavingExit(true);
+    setDayError(null);
+    const error = await saveProfile(nextProfile, {
+      activity: form.activity,
+      goal: form.goal,
+      cookTime: form.cookTime,
+      diet: form.diet,
+      equipment: form.equipment,
+      wake: form.wake,
+      sleep: form.sleep,
+      timezone: form.timezone,
+      meals: form.meals,
+    });
+    setSavingExit(false);
+
+    if (error) {
+      setDayError(error);
+      return;
+    }
+
+    try {
+      localStorage.setItem(userKey(STORAGE_KEY), JSON.stringify(form));
+    } catch {
+      /* backend is the saved source of truth */
+    }
+    router.push("/dashboard");
+  };
+
   const tzOptions = [...new Set([form.timezone, ...tzList].filter(Boolean))];
 
   return (
@@ -365,12 +432,14 @@ export default function AboutPage() {
             Kcalm /{" "}
             <b className="text-[#1D2A22] font-[500]">Onboarding calibration</b>
           </span>
-          <Link
-            href="/dashboard"
-            className="text-[#2E6B3E] font-[500] text-[13.5px] inline-flex items-center gap-[4px]"
+          <button
+            type="button"
+            onClick={() => void onSaveAndExit()}
+            disabled={savingExit}
+            className="text-[#2E6B3E] font-[500] text-[13.5px] inline-flex items-center gap-[4px] disabled:opacity-60"
           >
-            Save &amp; exit
-          </Link>
+            {savingExit ? "Saving…" : "Save & exit"}
+          </button>
         </div>
 
         <h1

@@ -78,7 +78,7 @@ export function goalLabelToId(label: string): GoalId {
   return found ?? "maintain";
 }
 
-type BackendProfile = {
+export type BackendProfile = {
   age: number;
   sex: "male" | "female";
   height_cm: number;
@@ -168,13 +168,14 @@ const createDefaults = () => ({
 });
 
 /** Profile save karo: pehle se hai to update, nahi hai to naya banao */
-export async function upsertProfile(fields: ProfileFields): Promise<void> {
+export async function upsertProfile(fields: ProfileFields): Promise<BackendProfile> {
   const payload = toBackend(fields);
+  let saved: BackendProfile;
   try {
-    await apiFetch("/users/profile", { method: "PATCH", json: payload });
+    saved = await apiFetch<BackendProfile>("/users/profile", { method: "PATCH", json: payload });
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) {
-      await apiFetch("/users/profile", {
+      saved = await apiFetch<BackendProfile>("/users/profile", {
         method: "POST",
         json: { ...createDefaults(), ...payload },
       });
@@ -187,6 +188,7 @@ export async function upsertProfile(fields: ProfileFields): Promise<void> {
   if (fields.weight !== undefined) {
     void logWeight(isoFromDate(new Date()), fields.weight).catch(() => {});
   }
+  return saved;
 }
 
 /** Backend se profile padho. Nahi mili (ya error) to null. */
@@ -219,17 +221,21 @@ export type DaySettings = {
   weightDirection: WeightDirection | null; // target weight na ho to null
 };
 
+export function daySettingsFromProfile(b: BackendProfile): DaySettings {
+  return {
+    wake: hhmm(b.usual_wake_time, "07:00"),
+    sleep: hhmm(b.usual_sleep_time, "23:00"),
+    timezone: b.timezone || detectTimezone(),
+    meals: Math.min(5, Math.max(2, b.meals_per_day || 4)),
+    weightDirection: b.weight_direction ?? null,
+  };
+}
+
 /** Wake/sleep/timezone/meals (aur weight_direction). Profile nahi bana (404) ya error to null. */
 export async function fetchDaySettings(): Promise<DaySettings | null> {
   try {
     const b = await apiFetch<BackendProfile>("/users/profile");
-    return {
-      wake: hhmm(b.usual_wake_time, "07:00"),
-      sleep: hhmm(b.usual_sleep_time, "23:00"),
-      timezone: b.timezone || detectTimezone(),
-      meals: Math.min(5, Math.max(2, b.meals_per_day || 4)),
-      weightDirection: b.weight_direction ?? null,
-    };
+    return daySettingsFromProfile(b);
   } catch {
     return null;
   }

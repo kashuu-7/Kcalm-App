@@ -118,6 +118,11 @@ export type WeeklyPlan = {
 
 const weekCreations = new Map<string, Promise<WeeklyPlan | null>>();
 
+/** Profile schedule update par in-flight weekly-plan request cache clear karo. */
+export function invalidateWeeklyPlanCache() {
+  weekCreations.clear();
+}
+
 /**
  * Hafte ka plan banao (7 din ek saath). Daily plan aur grocery dono yahi use karte hain,
  * isliye ek hi waqt mein do baar nahi banta. Pehle se hai (409) to null.
@@ -144,7 +149,7 @@ export function createWeeklyPlan(startDate: string): Promise<WeeklyPlan | null> 
 }
 
 /** Sirf is ek din ka plan banao (slots aur waqt backend profile se tay karta hai) */
-function createDailyPlan(date: string): Promise<MealPlan> {
+export function createDailyPlan(date: string): Promise<MealPlan> {
   return apiFetch<MealPlan>("/meal-plans", {
     method: "POST",
     json: { plan_date: date },

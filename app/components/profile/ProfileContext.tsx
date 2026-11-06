@@ -13,11 +13,14 @@ import { useAuth } from "../auth/AuthContext";
 import { ApiError, apiFetch } from "../../lib/api/client";
 import { refreshTargets, useTargets } from "./useTargets";
 import {
+  daySettingsFromProfile,
   fetchProfile,
+  fetchDaySettings,
   goalLabelToId,
   upsertProfile,
   type ProfileFields,
 } from "../../lib/api/profile";
+import { refreshTodayPlanAfterScheduleChange } from "../dashboard/MealsContext";
 
 export type ProfileData = {
   name: string;
@@ -130,6 +133,7 @@ useEffect(() => {
   const saveProfile = useCallback(
     async (next: ProfileData, extra?: ProfileFields): Promise<string | null> => {
       // Pehle backend, tabhi screen par badlo (galat data na dikhe)
+      let updatedProfile = next;
       try {
         if (next.name.trim() !== authName) {
           await apiFetch("/users/me", {
@@ -137,7 +141,8 @@ useEffect(() => {
             json: { full_name: next.name.trim() },
           });
         }
-        await upsertProfile({
+        const scheduleBefore = await fetchDaySettings();
+        const saved = await upsertProfile({
           age: next.age,
           sex: next.sex,
           height: next.height,
@@ -145,15 +150,38 @@ useEffect(() => {
           goal: goalLabelToId(next.goal),
           ...extra,
         });
+
+        const scheduleAfter = daySettingsFromProfile(saved);
+        const scheduleChanged = scheduleBefore !== null && (
+          scheduleBefore.meals !== scheduleAfter.meals ||
+          scheduleBefore.wake !== scheduleAfter.wake ||
+          scheduleBefore.sleep !== scheduleAfter.sleep ||
+          scheduleBefore.timezone !== scheduleAfter.timezone
+        );
+
+        updatedProfile = {
+          ...next,
+          age: saved.age,
+          sex: saved.sex === "female" ? "Female" : "Male",
+          height: saved.height_cm,
+          weight: saved.weight_kg,
+          goal:
+            saved.goal === "fat_loss"
+              ? "Lose weight"
+              : saved.goal === "muscle_gain"
+                ? "Gain weight"
+                : "Maintain weight",
+        };
+        setProfile(updatedProfile);
+        if (scheduleChanged) await refreshTodayPlanAfterScheduleChange();
       } catch (e) {
         return e instanceof ApiError
           ? e.message
           : "Couldn't save your profile. Please try again.";
       }
 
-      setProfile(next);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProfile));
       } catch {
         /* ignore */
       }
