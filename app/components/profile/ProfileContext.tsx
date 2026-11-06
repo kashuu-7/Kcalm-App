@@ -20,7 +20,7 @@ import {
   upsertProfile,
   type ProfileFields,
 } from "../../lib/api/profile";
-import { refreshTodayPlanAfterScheduleChange } from "../dashboard/MealsContext";
+import { refreshTodayPlanAfterProfileChange } from "../dashboard/MealsContext";
 
 export type ProfileData = {
   name: string;
@@ -158,6 +158,12 @@ useEffect(() => {
           scheduleBefore.sleep !== scheduleAfter.sleep ||
           scheduleBefore.timezone !== scheduleAfter.timezone
         );
+        const nutritionInputsChanged =
+          next.age !== profile.age ||
+          next.sex !== profile.sex ||
+          next.height !== profile.height ||
+          next.weight !== profile.weight ||
+          next.goal !== profile.goal;
 
         updatedProfile = {
           ...next,
@@ -173,7 +179,11 @@ useEffect(() => {
                 : "Maintain weight",
         };
         setProfile(updatedProfile);
-        if (scheduleChanged) await refreshTodayPlanAfterScheduleChange();
+        if (scheduleChanged) {
+          await refreshTodayPlanAfterProfileChange();
+        } else if (nutritionInputsChanged) {
+          await refreshTodayPlanAfterProfileChange({ archiveActivePlan: true });
+        }
       } catch (e) {
         return e instanceof ApiError
           ? e.message
@@ -189,7 +199,7 @@ useEffect(() => {
       setIsEditOpen(false);
       return null;
     },
-    [authEmail, authName],
+    [authEmail, authName, profile],
   );
 
   const value = useMemo(

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { Bricolage_Grotesque, Instrument_Serif } from "next/font/google";
 import { userKey } from "../../lib/userStorage";
 import { useAuth } from "../../components/auth/AuthContext";
+import { useProfile } from "../../components/profile/ProfileContext";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -189,8 +189,11 @@ function UnitInput({
 export default function CalibrationPage() {
   const router = useRouter();
   const { user } = useAuth();
-const [form, setForm] = useState<Form>(() => loadInitial(user?.name ?? ""));
+  const { profile, saveProfile } = useProfile();
+  const [form, setForm] = useState<Form>(() => loadInitial(user?.name ?? ""));
   const [errors, setErrors] = useState<Errors>({});
+  const [savingExit, setSavingExit] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -224,6 +227,53 @@ const [form, setForm] = useState<Form>(() => loadInitial(user?.name ?? ""));
     router.push(NEXT_ROUTE);
   };
 
+  const onSaveAndExit = async () => {
+    const errs = validate(form);
+    setErrors(errs);
+    const firstInvalid = Object.keys(errs)[0] as keyof Form | undefined;
+    if (firstInvalid) {
+      document.getElementById(`c-${firstInvalid}`)?.focus();
+      return;
+    }
+
+    setSavingExit(true);
+    setSaveError(null);
+    const error = await saveProfile(
+      {
+        ...profile,
+        name: form.name.trim(),
+        sex: form.sex,
+        age: Number(form.age),
+        height: Number(form.height),
+        weight: Number(form.weight),
+      },
+      { target: Number(form.target) },
+    );
+    setSavingExit(false);
+
+    if (error) {
+      setSaveError(error);
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        userKey(STORAGE_KEY),
+        JSON.stringify({
+          name: form.name.trim(),
+          sex: form.sex,
+          age: Number(form.age),
+          height: Number(form.height),
+          weight: Number(form.weight),
+          target: Number(form.target),
+        }),
+      );
+    } catch {
+      /* backend profile was saved */
+    }
+    router.push("/dashboard");
+  };
+
   return (
     <>
       <div className="max-w-[980px] pt-[22px] w-full mx-auto animate-[viewin_0.5s_var(--ease)]">
@@ -232,13 +282,21 @@ const [form, setForm] = useState<Form>(() => loadInitial(user?.name ?? ""));
             Kcalm /{" "}
             <b className="text-[#1D2A22] font-[500] ">Onboarding calibration</b>
           </span>
-          <Link
-            href="/dashboard"
-            className="text-[#2E6B3E] font-[500] text-[13.5px] inline-flex items-center gap-[4px] "
+          <button
+            type="button"
+            onClick={() => void onSaveAndExit()}
+            disabled={savingExit}
+            className="text-[#2E6B3E] font-[500] text-[13.5px] inline-flex items-center gap-[4px] disabled:opacity-60"
           >
-            Save &amp; exit
-          </Link>
+            {savingExit ? "Saving…" : "Save & exit"}
+          </button>
         </div>
+
+        {saveError && (
+          <p role="alert" className="mb-[14px] rounded-[12px] bg-[#FFEFE7] px-[12px] py-[10px] text-[13px] text-[#A4502B]">
+            {saveError}
+          </p>
+        )}
 
         <h1
           className={`${bricolage.className} text-[clamp(30px,4vw,46px)] font-semibold tracking-[-0.03em] leading-[1.1] m-0 text-balance`}

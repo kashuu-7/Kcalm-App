@@ -213,7 +213,9 @@ async function loadDay(offset: number) {
 }
 
 /** Schedule profile update ke baad active today's plan fresh generate karo. */
-export async function refreshTodayPlanAfterScheduleChange(): Promise<void> {
+export async function refreshTodayPlanAfterProfileChange(
+  options: { archiveActivePlan?: boolean } = {},
+): Promise<void> {
   syncOwner();
   api.invalidateWeeklyPlanCache();
   const key = dayKey(0);
@@ -237,6 +239,18 @@ export async function refreshTodayPlanAfterScheduleChange(): Promise<void> {
   putDay(key, emptyDay("loading"));
 
   try {
+    if (options.archiveActivePlan) {
+      const upcomingPlans = await Promise.all(
+        Array.from({ length: MAX_OFFSET + 1 }, (_, offset) =>
+          api.fetchPlanForDate(dayKey(offset)),
+        ),
+      );
+      await Promise.all(
+        upcomingPlans
+          .filter((plan): plan is api.MealPlan => plan !== null)
+          .map((plan) => api.archivePlan(plan.meal_plan_id)),
+      );
+    }
     // Direct POST: updated profile se backend slots/times chunta hai. Archived plan IDs ko read nahi karte.
     const plan = await api.createDailyPlan(key);
     const [loggedIds, snacks, built] = await Promise.all([

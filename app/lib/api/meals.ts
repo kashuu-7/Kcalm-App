@@ -156,6 +156,11 @@ export function createDailyPlan(date: string): Promise<MealPlan> {
   });
 }
 
+/** Archive an active plan before replacing its profile-dependent nutrition snapshot. */
+export function archivePlan(planId: string): Promise<void> {
+  return apiFetch<void>(`/meal-plans/${planId}`, { method: "DELETE" });
+}
+
 /** Is date ka plan banao: pehle poora hafta (grocery ke liye zaroori), na ban sake to sirf ye din */
 export async function createPlan(date: string): Promise<MealPlan> {
   try {
