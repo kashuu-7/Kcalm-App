@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bricolage_Grotesque, Instrument_Serif } from "next/font/google";
 import { userKey } from "../../../lib/userStorage";
+import { detectTimezone, fetchDaySettings } from "../../../lib/api/profile";
 import {
   Check,
   ChevronLeft,
@@ -48,6 +49,13 @@ const GOALS = [
   { id: "build", label: "Build muscle", Icon: Dumbbell },
 ] as const;
 
+const MEAL_COUNTS = [
+  { n: 2, label: "2 meals", plan: "Breakfast · Dinner" },
+  { n: 3, label: "3 meals", plan: "Breakfast · Lunch · Dinner" },
+  { n: 4, label: "4 meals", plan: "Breakfast · Lunch · Pre-workout · Dinner" },
+  { n: 5, label: "5 meals", plan: "Breakfast · Lunch · Snack · Pre-workout · Dinner" },
+] as const;
+
 const COOK_TIMES = [
   { id: "10", label: "10 min" },
   { id: "20", label: "20 min" },
@@ -73,12 +81,47 @@ const EQUIPMENT = [
   { id: "blender", label: "Blender" },
 ];
 
+// Browser purani list na de to ye chhoti list dikhti hai
+const FALLBACK_TIMEZONES = [
+  "UTC",
+  "Asia/Karachi",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Dhaka",
+  "Asia/Riyadh",
+  "Europe/London",
+  "Europe/Paris",
+  "America/New_York",
+  "America/Chicago",
+  "America/Los_Angeles",
+  "Australia/Sydney",
+];
+
+function timezoneList(): string[] {
+  let list: string[] = [];
+  try {
+    const sv = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] })
+      .supportedValuesOf;
+    if (sv) list = sv("timeZone");
+  } catch {
+    /* ignore */
+  }
+  if (list.length === 0) list = FALLBACK_TIMEZONES;
+  return [...new Set([...list, "UTC"])].sort();
+}
+
+const timeOk = (t: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
+
 type Form = {
   activity: (typeof ACTIVITY)[number]["id"];
   goal: (typeof GOALS)[number]["id"];
   cookTime: (typeof COOK_TIMES)[number]["id"];
   diet: string[];
   equipment: string[];
+  wake: string; // "HH:MM"
+  sleep: string; // "HH:MM"
+  timezone: string; // IANA naam
+  meals: number; // 2 se 5
 };
 
 const DEFAULTS: Form = {
@@ -87,6 +130,10 @@ const DEFAULTS: Form = {
   cookTime: "20",
   diet: ["none"],
   equipment: ["stovetop", "oven", "air-fryer"],
+  wake: "07:00",
+  sleep: "23:00",
+  timezone: "",
+  meals: 4,
 };
 
 /* ---------- small pieces ---------- */
@@ -181,22 +228,84 @@ function Chip({
   );
 }
 
+// Calibration ke pehle page jaisa input ka dabba (label + border wala box)
+const boxBase =
+  "rounded-[12px] border border-[#1d2a2224] bg-white px-[14px] py-[12px] text-[14px] text-[#1D2A22] focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-[#4E9E5C] focus-within:[outline-style:solid]";
+
+function LabeledBox({
+  id,
+  label,
+  className = "",
+  children,
+}: {
+  id: string;
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`grid gap-[6px] content-start min-w-0 ${className}`}>
+      <label htmlFor={id} className="text-[13px] font-medium text-[#1D2A22]">
+        {label}
+      </label>
+      <div className={`flex items-center gap-[8px] ${boxBase}`}>{children}</div>
+    </div>
+  );
+}
+
 /* ---------- page ---------- */
 
 export default function AboutPage() {
   const router = useRouter();
   const [form, setForm] = useState<Form>(DEFAULTS);
+  const [tzList, setTzList] = useState<string[]>([]);
+  const [dayError, setDayError] = useState<string | null>(null);
 
-  // Back se wapas aao to pehle ka jawab dikhe
+  // Back se wapas aao to pehle ka jawab dikhe. Naye schedule ke jawab na hon to
+  // backend se (returning user), warna browser ka timezone.
+  /* eslint-disable react-hooks/set-state-in-effect -- Restore the saved form after hydration. */
   useEffect(() => {
+    let cancelled = false;
+    let hasSchedule = false;
+
     try {
-      const raw = localStorage.getItem(userKey(STORAGE_KEY))
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore the saved form after hydration.
-      if (raw) setForm((f) => ({ ...f, ...JSON.parse(raw) }));
+      const raw = localStorage.getItem(userKey(STORAGE_KEY));
+      if (raw) {
+        const saved = JSON.parse(raw);
+        hasSchedule = typeof saved?.wake === "string";
+        setForm((f) => ({ ...f, ...saved }));
+      }
     } catch {
       /* ignore */
     }
+
+    const detected = detectTimezone();
+    setTzList(timezoneList());
+
+    if (hasSchedule) {
+      setForm((f) => ({ ...f, timezone: f.timezone || detected }));
+    } else {
+      fetchDaySettings().then((s) => {
+        if (cancelled) return;
+        if (s) {
+          setForm((f) => ({
+            ...f,
+            wake: s.wake,
+            sleep: s.sleep,
+            timezone: s.timezone,
+            meals: s.meals,
+          }));
+        } else {
+          setForm((f) => ({ ...f, timezone: f.timezone || detected }));
+        }
+      });
+    }
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -223,13 +332,30 @@ export default function AboutPage() {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!timeOk(form.wake) || !timeOk(form.sleep)) {
+      setDayError("Please enter both your wake-up time and your sleep time.");
+      return;
+    }
+    if (form.wake === form.sleep) {
+      setDayError("Your wake-up and sleep times can't be the same.");
+      return;
+    }
+    if (!form.timezone) {
+      setDayError("Please choose your timezone.");
+      return;
+    }
+    setDayError(null);
+
     try {
-      localStorage.setItem(userKey(STORAGE_KEY), JSON.stringify(form))
+      localStorage.setItem(userKey(STORAGE_KEY), JSON.stringify(form));
     } catch {
       /* ignore */
     }
     router.push(ONBOARDING_STEPS[2].href);
   };
+
+  const tzOptions = [...new Set([form.timezone, ...tzList].filter(Boolean))];
 
   return (
     <>
@@ -343,6 +469,91 @@ export default function AboutPage() {
                   />
                 ))}
               </div>
+            </Section>
+
+            {/* Daily rhythm: wake, sleep, timezone */}
+            <Section
+              id="q-rhythm"
+              title="What does your day look like?"
+              hint="We time your meals around when you wake up and go to sleep."
+              tag="Meal timing"
+            >
+              <div className="grid grid-cols-3 gap-[12px] max-[940px]:grid-cols-2 max-sm:grid-cols-1">
+                <LabeledBox id="wake" label="Wake-up time">
+                  <input
+                    id="wake"
+                    type="time"
+                    value={form.wake}
+                    onChange={(e) => set("wake", e.target.value)}
+                    className="min-w-0 flex-1 bg-transparent outline-none"
+                  />
+                </LabeledBox>
+                <LabeledBox id="sleep" label="Sleep time">
+                  <input
+                    id="sleep"
+                    type="time"
+                    value={form.sleep}
+                    onChange={(e) => set("sleep", e.target.value)}
+                    className="min-w-0 flex-1 bg-transparent outline-none"
+                  />
+                </LabeledBox>
+                <LabeledBox
+                  id="tz"
+                  label="Timezone"
+                  className="max-[940px]:col-span-2 max-sm:col-span-1"
+                >
+                  <select
+                    id="tz"
+                    value={form.timezone}
+                    onChange={(e) => set("timezone", e.target.value)}
+                    className="min-w-0 flex-1 bg-transparent outline-none"
+                  >
+                    {!form.timezone && (
+                      <option value="" disabled>
+                        Select timezone
+                      </option>
+                    )}
+                    {tzOptions.map((z) => (
+                      <option key={z} value={z}>
+                        {z.replace(/_/g, " ")}
+                      </option>
+                    ))}
+                  </select>
+                </LabeledBox>
+              </div>
+              {dayError && (
+                <p
+                  role="alert"
+                  className="mt-[12px] rounded-[12px] bg-[#FFEFE7] px-[12px] py-[10px] text-[13px] text-[#A4502B]"
+                >
+                  {dayError}
+                </p>
+              )}
+            </Section>
+
+            {/* Meals per day */}
+            <Section
+              id="q-meals"
+              role="radiogroup"
+              title="How many meals a day?"
+              hint="Your daily calories are split across these meals."
+              tag="2 to 5"
+            >
+              <div className="flex flex-wrap gap-[10px]">
+                {MEAL_COUNTS.map((m) => (
+                  <Chip
+                    key={m.n}
+                    type="radio"
+                    name="meals"
+                    label={m.label}
+                    checked={form.meals === m.n}
+                    onChange={() => set("meals", m.n)}
+                  />
+                ))}
+              </div>
+              <p className="mt-[10px] text-[12.5px] text-[#8E978F]">
+                {MEAL_COUNTS.find((m) => m.n === form.meals)?.plan}
+              </p>
             </Section>
 
             {/* Cooking time */}

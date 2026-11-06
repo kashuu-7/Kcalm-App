@@ -1,14 +1,42 @@
 import { apiFetch, ApiError } from "./client";
 import type { Meal } from "../../components/dashboard/mealData";
 
-export const SLOT_TYPES = ["breakfast", "lunch", "pre_workout", "dinner"] as const;
-
 /** Local date ko YYYY-MM-DD banao (zero-padded; toISOString UTC mein badal deta hai, isliye nahi) */
 export function isoFromDate(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+/* ---------------- Slot ka naam aur waqt (screen ke liye) ---------------- */
+
+const SLOT_LABELS: Record<string, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  snack: "Snack",
+  pre_workout: "Pre-workout",
+  dinner: "Dinner",
+};
+
+/** Backend ke meal_type ko screen ka naam do (pre_workout -> Pre-workout) */
+export function slotLabel(mealType: string): string {
+  return (
+    SLOT_LABELS[mealType] ??
+    mealType.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())
+  );
+}
+
+/**
+ * Backend ka local waqt ("12:00:00" ya "01:00") ko "12:00 PM" / "01:00 AM" banao.
+ * Purane plans mein waqt null hota hai, unhein "Unscheduled" dikhao.
+ */
+export function formatClock(t: string | null | undefined): string {
+  const m = t ? /^(\d{1,2}):(\d{2})/.exec(t) : null;
+  if (!m) return "Unscheduled";
+  const h24 = parseInt(m[1], 10);
+  const h12 = h24 % 12 || 12;
+  return `${String(h12).padStart(2, "0")}:${m[2]} ${h24 >= 12 ? "PM" : "AM"}`;
 }
 
 /* ---------------- Backend ke types ---------------- */
@@ -20,6 +48,7 @@ export type PlanItem = {
   recipe_name: string;
   servings: number;
   position: number;
+  scheduled_time: string | null; // local waqt, jaise "12:00:00"; purane plans mein null
   nutrition: Record<string, number>;
 };
 
@@ -92,6 +121,8 @@ const weekCreations = new Map<string, Promise<WeeklyPlan | null>>();
 /**
  * Hafte ka plan banao (7 din ek saath). Daily plan aur grocery dono yahi use karte hain,
  * isliye ek hi waqt mein do baar nahi banta. Pehle se hai (409) to null.
+ * meal_slots nahi bhejte: backend user ke meals_per_day ke hisaab se khud slots aur
+ * wake/sleep ke mutabiq waqt (scheduled_time) tay karta hai.
  */
 export function createWeeklyPlan(startDate: string): Promise<WeeklyPlan | null> {
   const running = weekCreations.get(startDate);
@@ -99,10 +130,7 @@ export function createWeeklyPlan(startDate: string): Promise<WeeklyPlan | null> 
 
   const p = apiFetch<WeeklyPlan>("/weekly-meal-plans", {
     method: "POST",
-    json: {
-      start_date: startDate,
-      meal_slots: SLOT_TYPES.map((t) => ({ meal_type: t, required: true })),
-    },
+    json: { start_date: startDate },
   })
     .catch((e: unknown) => {
       if (e instanceof ApiError && e.status === 409) return null;
@@ -115,14 +143,11 @@ export function createWeeklyPlan(startDate: string): Promise<WeeklyPlan | null> 
   return p;
 }
 
-/** Sirf is ek din ka plan banao (4 slots) */
+/** Sirf is ek din ka plan banao (slots aur waqt backend profile se tay karta hai) */
 function createDailyPlan(date: string): Promise<MealPlan> {
   return apiFetch<MealPlan>("/meal-plans", {
     method: "POST",
-    json: {
-      plan_date: date,
-      meal_slots: SLOT_TYPES.map((t) => ({ meal_type: t, required: true })),
-    },
+    json: { plan_date: date },
   });
 }
 

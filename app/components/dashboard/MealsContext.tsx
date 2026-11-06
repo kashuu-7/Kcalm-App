@@ -4,7 +4,7 @@ import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react"
 import SwapMealModal from "./SwapMealModal";
 import SwapMeal from "../dailyplan/SwapMeal";
 import AddSnack from "../dailyplan/AddSnack";
-import { SLOTS, type Meal, type MealSlot } from "./mealData";
+import type { Meal, MealSlot } from "./mealData";
 import { userKey } from "../../lib/userStorage";
 import * as api from "../../lib/api/meals";
 
@@ -21,10 +21,12 @@ export type Snack = {
 
 type DayStatus = "loading" | "ready" | "error";
 
-// Ek din ka data. meals/itemIds/logged SLOTS ke order mein hain.
+// Ek din ka data. slots/meals/itemIds/logged plan ke items ke order (position) mein hain.
+// Slots ab fixed nahi: backend user ke meals_per_day (2 se 5) ke hisaab se deta hai.
 type DayData = {
   status: DayStatus;
   planId: string | null;
+  slots: MealSlot[]; // id = backend ka meal_type, time = scheduled_time
   itemIds: (string | null)[];
   meals: (Meal | null)[];
   logged: boolean[];
@@ -58,15 +60,23 @@ const MAX_OFFSET = 7; // kitne din aage ja sakte ho
 
 const INITIAL_STATE: State = { viewOffset: 0, days: {}, modal: null };
 
+// Plan abhi aaya nahi (loading / error / guzra din) to khali cards ke liye slots.
+// Pehle asli plan ke baad wahi count yaad rakhte hain, taake cards ki ginti na kude.
+const DEFAULT_SLOT_TYPES = ["breakfast", "lunch", "pre_workout", "dinner"];
+let lastSlotTypes: string[] = DEFAULT_SLOT_TYPES;
+
 const emptyDay = (status: DayStatus, error: string | null = null): DayData => ({
   status,
   planId: null,
-  itemIds: SLOTS.map(() => null),
-  meals: SLOTS.map(() => null),
-  logged: SLOTS.map(() => false),
+  slots: [],
+  itemIds: [],
+  meals: [],
+  logged: [],
   snacks: [],
   error,
 });
+
+const LOADING_DAY = emptyDay("loading");
 
 /* ---------------- Date helpers ---------------- */
 
@@ -121,6 +131,7 @@ function syncOwner() {
   if (ownerKey === k) return;
   ownerKey = k;
   state = INITIAL_STATE;
+  lastSlotTypes = DEFAULT_SLOT_TYPES;
   inflight.clear();
 }
 
@@ -139,18 +150,21 @@ function patchDay(key: string, fn: (d: DayData) => DayData) {
 const errorMessage = (e: unknown) =>
   e instanceof Error ? e.message : "Something went wrong";
 
-// Plan ke items ko UI ke slots mein rakho
+// Plan ke items ko UI ke slots mein rakho (position ke order mein; waqt backend ka scheduled_time)
 async function buildSlots(plan: api.MealPlan) {
-  const meals: (Meal | null)[] = SLOTS.map(() => null);
-  const itemIds: (string | null)[] = SLOTS.map(() => null);
-  const recipes = await Promise.all(plan.meals.map((it) => api.fetchRecipe(it.recipe_id)));
-  plan.meals.forEach((it, i) => {
-    const idx = (api.SLOT_TYPES as readonly string[]).indexOf(it.meal_type);
-    if (idx < 0) return;
-    meals[idx] = api.itemToMeal(it, recipes[i]);
-    itemIds[idx] = it.id;
-  });
-  return { meals, itemIds };
+  const items = [...plan.meals].sort((a, b) => a.position - b.position);
+  const recipes = await Promise.all(items.map((it) => api.fetchRecipe(it.recipe_id)));
+
+  const slots: MealSlot[] = items.map((it) => ({
+    id: it.meal_type,
+    time: api.formatClock(it.scheduled_time),
+    type: api.slotLabel(it.meal_type),
+  }));
+  const meals: (Meal | null)[] = items.map((it, i) => api.itemToMeal(it, recipes[i]));
+  const itemIds: (string | null)[] = items.map((it) => it.id);
+
+  if (items.length > 0) lastSlotTypes = items.map((it) => it.meal_type);
+  return { slots, meals, itemIds };
 }
 
 async function loadDay(offset: number) {
@@ -167,14 +181,17 @@ async function loadDay(offset: number) {
       api.fetchSnacks(key),
     ]);
 
-    const built: { meals: (Meal | null)[]; itemIds: (string | null)[] } = plan
-      ? await buildSlots(plan)
-      : { meals: SLOTS.map(() => null), itemIds: SLOTS.map(() => null) };
+    const built: {
+      slots: MealSlot[];
+      meals: (Meal | null)[];
+      itemIds: (string | null)[];
+    } = plan ? await buildSlots(plan) : { slots: [], meals: [], itemIds: [] };
     const logged = built.itemIds.map((id) => (id ? loggedIds.includes(id) : false));
 
     putDay(key, {
       status: "ready",
       planId: plan?.meal_plan_id ?? null,
+      slots: built.slots,
       itemIds: built.itemIds,
       meals: built.meals,
       logged,
@@ -273,6 +290,7 @@ async function applyPlan(key: string, plan: api.MealPlan) {
   patchDay(key, (d) => ({
     ...d,
     planId: plan.meal_plan_id,
+    slots: built.slots,
     itemIds: built.itemIds,
     meals: built.meals,
   }));
@@ -283,7 +301,7 @@ function regeneratePlan(offset: number): number {
   const key = dayKey(offset);
   const d = state.days[key];
   if (!d || !d.planId) return 0;
-  const indexes = SLOTS.map((_, i) => i).filter((i) => d.itemIds[i] && !d.logged[i]);
+  const indexes = d.slots.map((_, i) => i).filter((i) => d.itemIds[i] && !d.logged[i]);
   if (indexes.length === 0) return 0;
   void regenerateAsync(key, d.planId, indexes);
   return indexes.length;
@@ -293,9 +311,10 @@ async function regenerateAsync(key: string, planId: string, indexes: number[]) {
   for (const i of indexes) {
     const cur = state.days[key];
     const itemId = cur?.itemIds[i];
-    if (!cur || !itemId) continue;
+    const mealType = cur?.slots[i]?.id;
+    if (!cur || !itemId || !mealType) continue;
     try {
-      const options = (await api.fetchSwapOptions(api.SLOT_TYPES[i])).filter(
+      const options = (await api.fetchSwapOptions(mealType)).filter(
         (o) => o.id !== cur.meals[i]?.id,
       );
       if (options.length === 0) continue;
@@ -319,8 +338,10 @@ function closeModal() {
 
 // Swap ki list backend se laate hain, phir modal kholte hain
 async function openSwapModal(offset: number, index: number) {
+  const mealType = state.days[dayKey(offset)]?.slots[index]?.id;
+  if (!mealType) return;
   try {
-    const options = await api.fetchSwapOptions(api.SLOT_TYPES[index]);
+    const options = await api.fetchSwapOptions(mealType);
     openModal({ type: "swap", offset, index, options });
   } catch {
     /* list nahi aayi to modal nahi khulta */
@@ -375,8 +396,14 @@ function placeholder(slot: MealSlot, status: DayStatus): Meal {
   };
 }
 
-function resolveMeals(day: DayData): Meal[] {
-  return SLOTS.map((slot, i) => day.meals[i] ?? placeholder(slot, day.status));
+// Plan hai to uske slots, nahi to khali cards ke slots (waqt "—")
+function resolveSlots(day: DayData): MealSlot[] {
+  if (day.slots.length > 0) return day.slots;
+  return lastSlotTypes.map((t) => ({ id: t, time: "—", type: api.slotLabel(t) }));
+}
+
+function resolveMeals(day: DayData, slots: MealSlot[]): Meal[] {
+  return slots.map((slot, i) => day.meals[i] ?? placeholder(slot, day.status));
 }
 
 // "view" = jo din Daily Plan par chuna hai, "today" = hamesha aaj (dashboard ke liye)
@@ -388,13 +415,18 @@ export function useMeals(which: "view" | "today" = "view") {
     ensureDay(offset);
   }, [offset]);
 
-  const day = s.days[dayKey(offset)] ?? emptyDay("loading");
-  const meals = useMemo(() => resolveMeals(day), [day]);
+  const day = s.days[dayKey(offset)] ?? LOADING_DAY;
+  const slots = useMemo(() => resolveSlots(day), [day]);
+  const meals = useMemo(() => resolveMeals(day, slots), [day, slots]);
+  const logged = useMemo(
+    () => meals.map((_, i) => day.logged[i] ?? false),
+    [day, meals],
+  );
 
   return {
-    slots: SLOTS,
+    slots,
     meals,
-    logged: day.logged,
+    logged,
     snacks: day.snacks,
     // "Up next" sirf aaj ke din hota hai
     activeIndex:
@@ -433,13 +465,14 @@ export function MealsProvider({ children }: { children: ReactNode }) {
 
   let content: ReactNode = null;
   if (modal) {
-    const day = s.days[dayKey(modal.offset)] ?? emptyDay("loading");
-    const meals = resolveMeals(day);
+    const day = s.days[dayKey(modal.offset)] ?? LOADING_DAY;
+    const slots = resolveSlots(day);
+    const meals = resolveMeals(day, slots);
 
     if (modal.type === "swap") {
       content = (
         <SwapMealModal
-          slot={SLOTS[modal.index]}
+          slot={slots[modal.index]}
           options={modal.options}
           current={meals[modal.index]}
           onSelect={(m) => void selectMeal(m)}
@@ -448,7 +481,7 @@ export function MealsProvider({ children }: { children: ReactNode }) {
       );
     } else if (modal.type === "swap-list") {
       content = (
-        <SwapMeal slots={SLOTS} meals={meals} onPick={pickSwapSlot} onClose={closeModal} />
+        <SwapMeal slots={slots} meals={meals} onPick={pickSwapSlot} onClose={closeModal} />
       );
     } else {
       content = (

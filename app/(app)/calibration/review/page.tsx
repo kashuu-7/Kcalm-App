@@ -221,26 +221,26 @@ export default function ReviewPage() {
   const [calc, setCalc] = useState<Targets | null>(null);
   const [calcError, setCalcError] = useState<{ key: string; message: string } | null>(null);
   const [confirming, setConfirming] = useState(false);
-const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   const calculationKey = [body.sex, body.age, body.height, body.weight, activity, goal].join("|");
 
   // step 1 aur step 2 ke jawab wapas load karo
   /* eslint-disable react-hooks/set-state-in-effect -- Restore saved onboarding values after hydration. */
   useEffect(() => {
-  const c = readJSON(CALIBRATION_KEY);
-  if (!c) {
-    router.replace("/calibration");   // pehle step poora karo
-    return;
-  }
-  setBody((b) => ({
-    sex: c.sex === "Female" ? "Female" : "Male",
-    age: num(c.age, b.age),
-    height: num(c.height, b.height),
-    weight: num(c.weight, b.weight),
-    target: num(c.target, b.target),
-  }));
-  const a = readJSON(ABOUT_KEY);
+    const c = readJSON(CALIBRATION_KEY);
+    if (!c) {
+      router.replace("/calibration"); // pehle step poora karo
+      return;
+    }
+    setBody((b) => ({
+      sex: c.sex === "Female" ? "Female" : "Male",
+      age: num(c.age, b.age),
+      height: num(c.height, b.height),
+      weight: num(c.weight, b.weight),
+      target: num(c.target, b.target),
+    }));
+    const a = readJSON(ABOUT_KEY);
     if (a) {
       if (typeof a.activity === "string" && a.activity in ACTIVITY)
         setActivity(a.activity as ActivityId);
@@ -251,92 +251,92 @@ const [confirmError, setConfirmError] = useState<string | null>(null);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Backend se hisaab, jab bhi body, activity ya goal badle
-useEffect(() => {
-  let cancelled = false;
-  calculateTargets({
-    sex: body.sex,
-    age: body.age,
-    height: body.height,
-    weight: body.weight,
-    activity,
-    goal,
-  })
-    .then((r) => {
-      if (!cancelled) setCalc(r);
+  useEffect(() => {
+    let cancelled = false;
+    calculateTargets({
+      sex: body.sex,
+      age: body.age,
+      height: body.height,
+      weight: body.weight,
+      activity,
+      goal,
     })
-    .catch((e) => {
-      if (!cancelled)
-        setCalcError({
-          key: calculationKey,
-          message: e instanceof ApiError ? e.message : "Couldn't calculate your targets.",
-        });
-    });
-  return () => {
-    cancelled = true;
-  };
-}, [body.sex, body.age, body.height, body.weight, activity, goal, calculationKey]);
+      .then((r) => {
+        if (!cancelled) setCalc(r);
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setCalcError({
+            key: calculationKey,
+            message: e instanceof ApiError ? e.message : "Couldn't calculate your targets.",
+          });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [body.sex, body.age, body.height, body.weight, activity, goal, calculationKey]);
 
   const act = ACTIVITY[activity];
   const g = GOAL[goal];
 
   // Backend ka hisaab aane tak
-if (!calc) {
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="mx-auto w-full max-w-[980px] px-[clamp(16px,4vw,56px)] py-[56px] text-center text-[14px] text-[#8E978F]"
-    >
-      {calcError?.key === calculationKey ? (
-        <div className="grid justify-items-center gap-[12px]">
-          <p
-            role="alert"
-            className="rounded-[12px] bg-[#FFEFE7] px-[12px] py-[10px] text-[13px] text-[#A4502B]"
-          >
-            {calcError.message}
-          </p>
-          <Link
-            href={ONBOARDING_STEPS[0].href}
-            className="font-medium text-[#2E6B3E] hover:underline"
-          >
-            Back to the start
-          </Link>
-        </div>
-      ) : (
-        "Calculating your targets…"
-      )}
-    </div>
+  if (!calc) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className="mx-auto w-full max-w-[980px] px-[clamp(16px,4vw,56px)] py-[56px] text-center text-[14px] text-[#8E978F]"
+      >
+        {calcError?.key === calculationKey ? (
+          <div className="grid justify-items-center gap-[12px]">
+            <p
+              role="alert"
+              className="rounded-[12px] bg-[#FFEFE7] px-[12px] py-[10px] text-[13px] text-[#A4502B]"
+            >
+              {calcError.message}
+            </p>
+            <Link
+              href={ONBOARDING_STEPS[0].href}
+              className="font-medium text-[#2E6B3E] hover:underline"
+            >
+              Back to the start
+            </Link>
+          </div>
+        ) : (
+          "Calculating your targets…"
+        )}
+      </div>
+    );
+  }
+
+  const bmr = calc.bmr;
+  const tdee = calc.tdee;
+  const tef = Math.round(tdee * 0.1);
+  const active = tdee - bmr - tef;
+
+  const net = calc.calories;
+  const adjShown = net - tdee;
+
+  const proteinG = calc.proteinG;
+  const proteinKcal = proteinG * 4;
+  const fatG = calc.fatG;
+  const fatKcal = fatG * 9;
+  const carbG = calc.carbG;
+  const carbKcal = carbG * 4;
+
+  const proteinPct = Math.round((proteinKcal / net) * 100);
+  const fatPct = Math.round((fatKcal / net) * 100);
+  const carbPct = Math.max(0, 100 - proteinPct - fatPct);
+
+  const barTotal = proteinKcal + carbKcal + fatKcal;
+  const w = (k: number) => `${(k / barTotal) * 100}%`;
+
+  // Backend protein ko goal ke hisab se khud tay karta hai, slider sirf dikhata hai
+  const ppk = body.weight > 0 ? proteinG / body.weight : 0;
+  const sliderPct = Math.min(
+    100,
+    Math.max(0, ((ppk - PPK_MIN) / (PPK_MAX - PPK_MIN)) * 100),
   );
-}
-
-const bmr = calc.bmr;
-const tdee = calc.tdee;
-const tef = Math.round(tdee * 0.1);
-const active = tdee - bmr - tef;
-
-const net = calc.calories;
-const adjShown = net - tdee;
-
-const proteinG = calc.proteinG;
-const proteinKcal = proteinG * 4;
-const fatG = calc.fatG;
-const fatKcal = fatG * 9;
-const carbG = calc.carbG;
-const carbKcal = carbG * 4;
-
-const proteinPct = Math.round((proteinKcal / net) * 100);
-const fatPct = Math.round((fatKcal / net) * 100);
-const carbPct = Math.max(0, 100 - proteinPct - fatPct);
-
-const barTotal = proteinKcal + carbKcal + fatKcal;
-const w = (k: number) => `${(k / barTotal) * 100}%`;
-
-// Backend protein ko goal ke hisab se khud tay karta hai, slider sirf dikhata hai
-const ppk = body.weight > 0 ? proteinG / body.weight : 0;
-const sliderPct = Math.min(
-  100,
-  Math.max(0, ((ppk - PPK_MIN) / (PPK_MAX - PPK_MIN)) * 100),
-);
 
   const goalNote =
     goal === "maintain"
@@ -351,64 +351,72 @@ const sliderPct = Math.min(
   };
 
   const GOAL_LABEL = {
-  lose: "Lose weight",
-  maintain: "Maintain weight",
-  build: "Gain weight",
-} as const;
+    lose: "Lose weight",
+    maintain: "Maintain weight",
+    build: "Gain weight",
+  } as const;
 
-const confirm = async () => {
-  const saved = readJSON(CALIBRATION_KEY);
-  const about = readJSON(ABOUT_KEY);
+  const confirm = async () => {
+    const saved = readJSON(CALIBRATION_KEY);
+    const about = readJSON(ABOUT_KEY);
 
-  setConfirming(true);
-  setConfirmError(null);
+    setConfirming(true);
+    setConfirmError(null);
 
-  const err = await saveProfile(
-    {
-      ...profile,
-      name:
-        typeof saved?.name === "string" && saved.name.trim()
-          ? saved.name.trim()
-          : profile.name,
-      sex: body.sex,
-      age: body.age,
-      height: body.height,
-      weight: body.weight,
-      calories: net,
-      goal: GOAL_LABEL[goal],
-    },
-    {
-      activity,
-      goal,
-      target: body.target,
-      cookTime: about?.cookTime,
-      diet: Array.isArray(about?.diet) ? about.diet : undefined,
-      equipment: Array.isArray(about?.equipment) ? about.equipment : undefined,
-    },
-  );
-
-  if (err) {
-    setConfirmError(err);
-    setConfirming(false);
-    return;
-  }
-
-  try {
-    localStorage.setItem(
-      userKey(TARGETS_KEY),
-      JSON.stringify({
+    const err = await saveProfile(
+      {
+        ...profile,
+        name:
+          typeof saved?.name === "string" && saved.name.trim()
+            ? saved.name.trim()
+            : profile.name,
+        sex: body.sex,
+        age: body.age,
+        height: body.height,
+        weight: body.weight,
         calories: net,
-        proteinG,
-        carbG,
-        fatG,
-        proteinPerKg: ppk,
-      }),
+        goal: GOAL_LABEL[goal],
+      },
+      {
+        activity,
+        goal,
+        target: body.target,
+        cookTime: about?.cookTime,
+        diet: Array.isArray(about?.diet) ? about.diet : undefined,
+        equipment: Array.isArray(about?.equipment) ? about.equipment : undefined,
+        // Din ka schedule: backend isi se meals ke waqt (scheduled_time) tay karta hai
+        wake: typeof about?.wake === "string" ? about.wake : undefined,
+        sleep: typeof about?.sleep === "string" ? about.sleep : undefined,
+        timezone:
+          typeof about?.timezone === "string" && about.timezone
+            ? about.timezone
+            : undefined,
+        meals: typeof about?.meals === "number" ? about.meals : undefined,
+      },
     );
-  } catch {
-    /* ignore */
-  }
-  router.push(AFTER_CONFIRM);
-};
+
+    if (err) {
+      setConfirmError(err);
+      setConfirming(false);
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        userKey(TARGETS_KEY),
+        JSON.stringify({
+          calories: net,
+          proteinG,
+          carbG,
+          fatG,
+          proteinPerKg: ppk,
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+    router.push(AFTER_CONFIRM);
+  };
 
   const adjText =
     adjShown === 0
@@ -612,13 +620,13 @@ const confirm = async () => {
         </div>
 
         {confirmError && (
-  <p
-    role="alert"
-    className="mt-[16px] rounded-[12px] bg-[#FFEFE7] px-[12px] py-[10px] text-[13px] text-[#A4502B]"
-  >
-    {confirmError}
-  </p>
-)}
+          <p
+            role="alert"
+            className="mt-[16px] rounded-[12px] bg-[#FFEFE7] px-[12px] py-[10px] text-[13px] text-[#A4502B]"
+          >
+            {confirmError}
+          </p>
+        )}
         <div className="flex items-center justify-between mt-[22px]">
           <Link
             href={ONBOARDING_STEPS[1].href}

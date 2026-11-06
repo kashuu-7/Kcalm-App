@@ -5,6 +5,7 @@ import { isoFromDate } from "./meals";
 export type ActivityId = "sedentary" | "light" | "moderate" | "active";
 export type GoalId = "lose" | "maintain" | "build";
 export type CookTime = "10" | "20" | "30+";
+export type WeightDirection = "lose_weight" | "gain_weight" | "maintain_weight";
 
 // Frontend ke naam, backend ke naam mein badalne ki table
 const ACTIVITY_TO_BACKEND = {
@@ -34,6 +35,21 @@ const GOAL_LABEL: Record<GoalId, string> = {
 };
 
 const COOK_MINUTES: Record<CookTime, number> = { "10": 10, "20": 20, "30+": 45 };
+
+/** Is browser ka timezone (IANA naam, jaise "Asia/Karachi") */
+export function detectTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
+
+// Backend "11:00:00" bhejta hai, screen ko "11:00" chahiye
+function hhmm(t: string | null | undefined, fallback: string): string {
+  const m = t ? /^(\d{1,2}):(\d{2})/.exec(t) : null;
+  return m ? `${m[1].padStart(2, "0")}:${m[2]}` : fallback;
+}
 
 // "Gluten free" ya "air-fryer" ko backend ke format (gluten_free, air_fryer) mein badlo
 const toKey = (s: string) => s.trim().toLowerCase().replace(/[\s-]+/g, "_");
@@ -73,6 +89,10 @@ type BackendProfile = {
   target_rate: number | null;
   max_cooking_minutes: number;
   meals_per_day: number;
+  usual_wake_time: string;
+  usual_sleep_time: string;
+  timezone: string;
+  weight_direction: WeightDirection | null;
   allergies: string[];
   dietary_restrictions: string[];
   preferred_foods: string[];
@@ -92,6 +112,10 @@ export type ProfileFields = Partial<{
   diet: string[];
   allergens: string[]; // frontend ids: nuts, seafood, eggs, dairy, wheat, soy, sesame
   equipment: string[];
+  wake: string; // "HH:MM", jaise "11:00"
+  sleep: string; // "HH:MM", jaise "03:00"
+  timezone: string; // IANA naam, jaise "Asia/Karachi"
+  meals: number; // 2 se 5
 }>;
 
 export function toBackend(f: ProfileFields): Partial<BackendProfile> {
@@ -104,6 +128,12 @@ export function toBackend(f: ProfileFields): Partial<BackendProfile> {
   if (f.activity) p.activity_level = ACTIVITY_TO_BACKEND[f.activity];
   if (f.goal) p.goal = GOAL_TO_BACKEND[f.goal];
   if (f.cookTime) p.max_cooking_minutes = COOK_MINUTES[f.cookTime];
+  if (f.wake) p.usual_wake_time = f.wake;
+  if (f.sleep) p.usual_sleep_time = f.sleep;
+  if (f.timezone) p.timezone = f.timezone;
+  if (f.meals !== undefined) {
+    p.meals_per_day = Math.min(5, Math.max(2, Math.round(f.meals)));
+  }
   if (f.diet) {
     p.dietary_restrictions = f.diet
       .filter((d) => d !== "none")
@@ -120,18 +150,22 @@ export function toBackend(f: ProfileFields): Partial<BackendProfile> {
 }
 
 // Pehli baar profile banate waqt jo cheezein na di hon, unke default
-const CREATE_DEFAULTS = {
+// (function hai taake timezone browser se, sahi waqt par, pata chale)
+const createDefaults = () => ({
   activity_level: "light",
   goal: "maintenance",
   target_rate: null,
   max_cooking_minutes: 20,
   meals_per_day: 4,
+  usual_wake_time: "07:00",
+  usual_sleep_time: "23:00",
+  timezone: detectTimezone(),
   allergies: [] as string[],
   dietary_restrictions: [] as string[],
   preferred_foods: [] as string[],
   disliked_foods: [] as string[],
   equipment: ["stovetop", "oven", "air_fryer"],
-};
+});
 
 /** Profile save karo: pehle se hai to update, nahi hai to naya banao */
 export async function upsertProfile(fields: ProfileFields): Promise<void> {
@@ -142,7 +176,7 @@ export async function upsertProfile(fields: ProfileFields): Promise<void> {
     if (e instanceof ApiError && e.status === 404) {
       await apiFetch("/users/profile", {
         method: "POST",
-        json: { ...CREATE_DEFAULTS, ...payload },
+        json: { ...createDefaults(), ...payload },
       });
     } else {
       throw e;
@@ -171,6 +205,30 @@ export async function fetchProfile(): Promise<{
       height: b.height_cm,
       weight: b.weight_kg,
       goal: GOAL_LABEL[GOAL_FROM_BACKEND[b.goal] ?? "maintain"],
+    };
+  } catch {
+    return null;
+  }
+}
+
+export type DaySettings = {
+  wake: string; // "HH:MM"
+  sleep: string; // "HH:MM"
+  timezone: string;
+  meals: number; // 2 se 5
+  weightDirection: WeightDirection | null; // target weight na ho to null
+};
+
+/** Wake/sleep/timezone/meals (aur weight_direction). Profile nahi bana (404) ya error to null. */
+export async function fetchDaySettings(): Promise<DaySettings | null> {
+  try {
+    const b = await apiFetch<BackendProfile>("/users/profile");
+    return {
+      wake: hhmm(b.usual_wake_time, "07:00"),
+      sleep: hhmm(b.usual_sleep_time, "23:00"),
+      timezone: b.timezone || detectTimezone(),
+      meals: Math.min(5, Math.max(2, b.meals_per_day || 4)),
+      weightDirection: b.weight_direction ?? null,
     };
   } catch {
     return null;
