@@ -251,8 +251,9 @@ export async function refreshTodayPlanAfterProfileChange(
           .map((plan) => api.archivePlan(plan.meal_plan_id)),
       );
     }
-    // Direct POST: updated profile se backend slots/times chunta hai. Archived plan IDs ko read nahi karte.
-    const plan = await api.createDailyPlan(key);
+    // createPlan: pehle poora hafta (grocery ko hafte ka plan chahiye), na ban sake to sirf ye din.
+    // Archived plans list mein nahi aate (backend sirf "generated" plans deta hai), isliye purana plan wapas nahi aata.
+    const plan = await api.createPlan(key);
     const [loggedIds, snacks, built] = await Promise.all([
       api.fetchPlanLogs(plan.meal_plan_id),
       api.fetchSnacks(key),
