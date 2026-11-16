@@ -46,6 +46,7 @@ export type PlanItem = {
   meal_type: string;
   recipe_id: string;
   recipe_name: string;
+  image_url?: string | null;
   servings: number;
   position: number;
   scheduled_time: string | null; // local waqt, jaise "12:00:00"; purane plans mein null
@@ -64,6 +65,7 @@ type PlanSummary = { meal_plan_id: string; plan_date: string };
 export type RecipeInfo = {
   id: string;
   name: string;
+  image_url?: string | null;
   description: string | null;
   total_time_minutes: number;
   tags: string[];
@@ -74,6 +76,7 @@ type Nutrient = { code: string; amount: number };
 type Candidate = {
   recipe_id: string;
   name: string;
+  image_url?: string | null;
   total_time_minutes: number;
   tags: string[];
   per_serving_nutrition: Nutrient[];
@@ -314,6 +317,7 @@ export function itemToMeal(item: PlanItem, recipe: RecipeInfo | null): Meal {
   const n = item.nutrition;
   return {
     id: item.recipe_id,
+    image_url: item.image_url ?? recipe?.image_url ?? null,
     name: item.recipe_name,
     desc: recipe?.description ?? "",
     kcal: Math.round(n.calories ?? 0),
@@ -331,6 +335,7 @@ function candidateToMeal(c: Candidate, recipe: RecipeInfo | null): Meal {
     c.per_serving_nutrition.find((x) => x.code === code)?.amount ?? 0;
   return {
     id: c.recipe_id,
+    image_url: c.image_url ?? recipe?.image_url ?? null,
     name: c.name,
     desc: recipe?.description ?? "",
     kcal: Math.round(get("calories")),

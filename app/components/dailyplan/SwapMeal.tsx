@@ -81,9 +81,19 @@ export default function SwapMeal({
               className="grid grid-cols-[64px_minmax(0,1fr)_auto] max-sm:grid-cols-[52px_minmax(0,1fr)_auto] gap-[14px] max-sm:gap-[10px] items-center p-2.5 rounded-2xl border-[1.5px] border-[#1d2a2214] text-left w-full cursor-pointer transition-all duration-200 hover:bg-[#E9F6EC] hover:border-[#4E9E5C]"
             >
               <div
-                className="w-[64px] h-[54px] max-sm:w-[52px] max-sm:h-[46px] rounded-xl relative overflow-hidden after:content-[''] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_30%_25%,_rgba(255,255,255,.55),_transparent_45%)]"
+                className="w-[64px] h-[54px] max-sm:w-[52px] max-sm:h-[46px] rounded-xl relative overflow-hidden"
                 style={{ background: mealBackground(meals[i].colors) }}
-              />
+              >
+                {meals[i].image_url && (
+                  <img
+                    src={meals[i].image_url}
+                    alt={meals[i].name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
+
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,_rgba(255,255,255,.55),_transparent_45%)] pointer-events-none" />
+              </div>
               <span>
                 <b className="text-[15px] block ">{slot.type}</b>
                 <small className="text-[12.5px] text-[#8E978F] ">

@@ -1,5 +1,7 @@
+
 export type Meal = {
   id: string;
+  image_url?: string | null;
   name: string;
   desc: string;
   kcal: number;
@@ -8,8 +10,9 @@ export type Meal = {
   c: number;
   f: number;
   veg: boolean;
-  colors: [string, string, string]; // image area ke 3 rang (hex)
+  colors: [string, string, string];
 };
+
 
 export type MealSlot = {
   id: string;

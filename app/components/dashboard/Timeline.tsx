@@ -12,8 +12,16 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export default function Timeline() {
-  const { slots, meals, logged, activeIndex, toggleLogged, openSwap, error, retry } =
-  useMeals("today");
+  const {
+    slots,
+    meals,
+    logged,
+    activeIndex,
+    toggleLogged,
+    openSwap,
+    error,
+    retry,
+  } = useMeals("today");
 
   return (
     <div>
@@ -40,9 +48,16 @@ export default function Timeline() {
       </div>
 
       {error && (
-        <div role="alert" className="mb-[14px] rounded-[14px] bg-[#FFEFE7] px-[14px] py-[12px] text-[13px] text-[#A4502B]">
+        <div
+          role="alert"
+          className="mb-[14px] rounded-[14px] bg-[#FFEFE7] px-[14px] py-[12px] text-[13px] text-[#A4502B]"
+        >
           <p>{error}</p>
-          <button type="button" onClick={retry} className="mt-[8px] font-medium underline underline-offset-2">
+          <button
+            type="button"
+            onClick={retry}
+            className="mt-[8px] font-medium underline underline-offset-2"
+          >
             Try again
           </button>
         </div>
@@ -91,9 +106,28 @@ export default function Timeline() {
               {/* Image area */}
               <div className="relative">
                 <div
-                  className="relative overflow-hidden h-[128px] rounded-[16px] after:content-[''] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_30%_25%,#ffffff8c,transparent_45%)]"
+                  className="relative overflow-hidden h-[128px] rounded-[16px]"
                   style={{ background: mealBackground(meal.colors) }}
-                ></div>
+                >
+                  {meal.image_url ? (
+                    <img
+                      src={meal.image_url}
+                      alt={meal.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : null}
+
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,#ffffff8c,transparent_45%)] pointer-events-none" />
+
+                  <span className="absolute left-[10px] bottom-[10px] bg-[#1d2a22bf] text-white text-[10.5px] py-[3px] px-[8px] rounded-full z-[1]">
+                    {meal.kcal} kcal
+                  </span>
+
+                  <span className="absolute right-[10px] top-[10px] bg-[#ffffffe6] text-[11px] py-[3px] px-[8px] rounded-full z-[1] flex gap-1 items-center">
+                    <Clock size={11} />
+                    {meal.mins} min
+                  </span>
+                </div>
                 <span className="absolute left-[10px] bottom-[10px] bg-[#1d2a22bf] text-white text-[10.5px] py-[3px] px-[8px] rounded-full z-[1]">
                   {meal.kcal} kcal
                 </span>

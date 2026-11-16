@@ -120,7 +120,15 @@ export default function SwapMealModal({
                 <div
                   className="w-16 h-[54px] max-sm:w-[52px] max-sm:h-[46px] rounded-xl relative overflow-hidden after:content-[''] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_30%_25%,_rgba(255,255,255,.55),_transparent_45%)]"
                   style={{ background: mealBackground(m.colors) }}
-                ></div>
+                >
+                  {m.image_url && (
+                    <img
+                      src={m.image_url}
+                      alt={m.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  )}
+                </div>
                 <span>
                   <b className="text-[15px] block ">{m.name}</b>
                   <small className="text-[12.5px] text-[#8E978F] ">

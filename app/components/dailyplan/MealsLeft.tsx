@@ -117,9 +117,16 @@ export default function MealsLeft() {
 
         <div className="relative grid gap-[12px] ">
           {error && (
-            <div role="alert" className="rounded-[14px] bg-[#FFEFE7] px-[14px] py-[12px] text-[13px] text-[#A4502B]">
+            <div
+              role="alert"
+              className="rounded-[14px] bg-[#FFEFE7] px-[14px] py-[12px] text-[13px] text-[#A4502B]"
+            >
               <p>{error}</p>
-              <button type="button" onClick={retry} className="mt-[8px] font-medium underline underline-offset-2">
+              <button
+                type="button"
+                onClick={retry}
+                className="mt-[8px] font-medium underline underline-offset-2"
+              >
                 Try again
               </button>
             </div>
@@ -164,7 +171,15 @@ export default function MealsLeft() {
                   <div
                     className="w-[72px] h-[60px] max-sm:w-[56px] max-sm:h-[52px] rounded-xl relative overflow-hidden after:content-[''] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_30%_25%,_rgba(255,255,255,.55),_transparent_45%)]"
                     style={{ background: mealBackground(meal.colors) }}
-                  />
+                  >
+                    {meal.image_url && (
+                      <img
+                        src={meal.image_url}
+                        alt={meal.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
 
                   <div className="min-w-0">
                     <h4
@@ -295,8 +310,7 @@ export default function MealsLeft() {
                   </span>
                   <br className="max-sm:hidden" />
                   <span>
-                    <b className="font-[500] text-[#1D2A22] ">{snack.f}g</b>{" "}
-                    fat
+                    <b className="font-[500] text-[#1D2A22] ">{snack.f}g</b> fat
                   </span>
                 </div>
 
