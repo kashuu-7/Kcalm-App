@@ -96,7 +96,15 @@ export default function RecipeRight({
           <div
             className="relative overflow-hidden w-[84px] h-[84px] flex-none rounded-full after:content-[''] after:absolute after:inset-0 after:bg-[radial-gradient(circle_at_30%_25%,_rgba(255,255,255,.55),_transparent_45%)]"
             style={{ background: mealBackground(meal.colors) }}
-          />
+          >
+            {meal.image_url && (
+              <img
+                src={meal.image_url}
+                alt={meal.name}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
+          </div>
           <div className="min-w-0">
             <h3
               className={`${bricolage.className} text-[#1D2A22] text-[22px] font-semibold tracking-[-.03em] leading-[1.1] text-balance`}

@@ -58,6 +58,13 @@ export default function RecipeLeft({ meal, recipe, servings }: RecipeLeftProps) 
             className="absolute inset-0 grid place-items-center text-center p-[20px]"
             style={{ background: mealBackground(meal.colors) }}
           >
+            {meal.image_url && (
+              <img
+                src={meal.image_url}
+                alt={meal.name}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
             <div className="bg-white/90 backdrop-blur-[8px] rounded-[18px] py-[16px] px-[20px] shadow-[var(--shadow)] max-w-[300px]">
               <h4
                 className={`${bricolage.className} text-[17px] font-semibold tracking-[-.02em] leading-[1.1] text-balance`}
