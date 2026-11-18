@@ -141,7 +141,12 @@ export function createWeeklyPlan(startDate: string): Promise<WeeklyPlan | null> 
     json: { start_date: startDate },
   })
     .catch((e: unknown) => {
-      if (e instanceof ApiError && e.status === 409) return null;
+      if (
+        e instanceof ApiError &&
+        e.status === 409 &&
+        e.code !== "MEAL_PLAN_INPUTS_CHANGED" &&
+        e.code !== "MEAL_PLAN_CONSUMPTION_EXISTS"
+      ) return null;
       throw e;
     })
     .finally(() => {
@@ -166,16 +171,30 @@ export function archivePlan(planId: string): Promise<void> {
 
 /** Is date ka plan banao: pehle poora hafta (grocery ke liye zaroori), na ban sake to sirf ye din */
 export async function createPlan(date: string): Promise<MealPlan> {
-  try {
-    const week = await createWeeklyPlan(date);
-    const fromWeek = week?.daily_plans.find((p) => p.plan_date === date);
-    if (fromWeek) return fromWeek;
-  } catch (e) {
-    if (!(e instanceof ApiError)) throw e; // network jaisi cheez
+  const retryable = new Set(["MEAL_PLAN_BUSY", "MEAL_PLAN_INPUTS_CHANGED"]);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      try {
+        const week = await createWeeklyPlan(date);
+        const fromWeek = week?.daily_plans.find((p) => p.plan_date === date);
+        if (fromWeek) return fromWeek;
+      } catch (e) {
+        if (!(e instanceof ApiError)) throw e;
+        if (retryable.has(e.code ?? "")) throw e;
+      }
+      const existing = await fetchPlanForDate(date);
+      if (existing) return existing;
+      return await createDailyPlan(date);
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e;
+      if (e.code === "MEAL_PLAN_CONSUMPTION_EXISTS") {
+        const protectedPlan = await fetchPlanForDate(date);
+        if (protectedPlan) return protectedPlan;
+      }
+      if (!retryable.has(e.code ?? "") || attempt >= 2) throw e;
+      await new Promise((resolve) => setTimeout(resolve, 200 * (attempt + 1)));
+    }
   }
-  const existing = await fetchPlanForDate(date);
-  if (existing) return existing;
-  return createDailyPlan(date);
 }
 
 /** Plan ke kaun se items "khaye" mark hain (backend ka GET /meal-plans/{id}/logs) */

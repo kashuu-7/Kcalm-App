@@ -6,6 +6,7 @@ import SwapMeal from "../dailyplan/SwapMeal";
 import AddSnack from "../dailyplan/AddSnack";
 import type { Meal, MealSlot } from "./mealData";
 import { userKey } from "../../lib/userStorage";
+import { ApiError } from "../../lib/api/client";
 import * as api from "../../lib/api/meals";
 
 /* ---------------- Types ---------------- */
@@ -239,6 +240,7 @@ export async function refreshTodayPlanAfterProfileChange(
   putDay(key, emptyDay("loading"));
 
   try {
+    let protectedToday: api.MealPlan | null = null;
     if (options.archiveActivePlan) {
       const upcomingPlans = await Promise.all(
         Array.from({ length: MAX_OFFSET + 1 }, (_, offset) =>
@@ -248,12 +250,26 @@ export async function refreshTodayPlanAfterProfileChange(
       await Promise.all(
         upcomingPlans
           .filter((plan): plan is api.MealPlan => plan !== null)
-          .map((plan) => api.archivePlan(plan.meal_plan_id)),
+          .map(async (plan) => {
+            const loggedIds = await api.fetchPlanLogs(plan.meal_plan_id);
+            if (loggedIds.length > 0) {
+              if (plan.plan_date === key) protectedToday = plan;
+              return;
+            }
+            try {
+              await api.archivePlan(plan.meal_plan_id);
+            } catch (e) {
+              if (e instanceof ApiError && e.code === "MEAL_PLAN_CONSUMPTION_EXISTS") {
+                if (plan.plan_date === key) protectedToday = await api.fetchPlanForDate(key);
+                return;
+              }
+              throw e;
+            }
+          }),
       );
     }
-    // createPlan: pehle poora hafta (grocery ko hafte ka plan chahiye), na ban sake to sirf ye din.
-    // Archived plans list mein nahi aate (backend sirf "generated" plans deta hai), isliye purana plan wapas nahi aata.
-    const plan = await api.createPlan(key);
+    // Consumed snapshots remain authoritative after profile changes. Reuse them without replacement.
+    const plan = protectedToday ?? await api.createPlan(key);
     const [loggedIds, snacks, built] = await Promise.all([
       api.fetchPlanLogs(plan.meal_plan_id),
       api.fetchSnacks(key),
@@ -273,7 +289,6 @@ export async function refreshTodayPlanAfterProfileChange(
     });
   } catch (e) {
     if (dayRequestIds.get(key) === requestId) {
-      // Purana (ab archived) plan active state mein restore nahi hota.
       putDay(key, emptyDay("error", errorMessage(e)));
     }
   } finally {
@@ -333,7 +348,12 @@ async function toggleLogged(offset: number, index: number) {
   try {
     if (next) await api.logItem(d.planId, itemId);
     else await api.unlogItem(d.planId, itemId);
-  } catch {
+  } catch (e) {
+    if (e instanceof ApiError && e.code === "MEAL_PLAN_ITEM_ALREADY_LOGGED") {
+      // Another request already logged it. Reload canonical state from the backend.
+      await loadDay(offset);
+      return;
+    }
     setLogged(!next); // save na hua to wapas purani halat
   }
 }
@@ -414,7 +434,9 @@ function closeModal() {
 
 // Swap ki list backend se laate hain, phir modal kholte hain
 async function openSwapModal(offset: number, index: number) {
-  const mealType = state.days[dayKey(offset)]?.slots[index]?.id;
+  const day = state.days[dayKey(offset)];
+  if (day?.logged[index]) return;
+  const mealType = day?.slots[index]?.id;
   if (!mealType) return;
   try {
     const options = await api.fetchSwapOptions(mealType);
@@ -427,6 +449,7 @@ async function openSwapModal(offset: number, index: number) {
 function pickSwapSlot(index: number) {
   const m = state.modal;
   if (!m || m.type !== "swap-list") return;
+  if (state.days[dayKey(m.offset)]?.logged[index]) return;
   void openSwapModal(m.offset, index);
 }
 
@@ -439,11 +462,15 @@ async function selectMeal(meal: Meal) {
   const d = state.days[key];
   const itemId = d?.itemIds[m.index];
   if (!d || !d.planId || !itemId) return;
+  if (d.logged[m.index]) return;
   if (d.meals[m.index]?.id === meal.id) return;
 
   try {
     await applyPlan(key, await api.swapItem(d.planId, itemId, meal.id));
-  } catch {
+  } catch (e) {
+    if (e instanceof ApiError && e.code === "MEAL_PLAN_ITEM_ALREADY_LOGGED") {
+      await loadDay(m.offset);
+    }
     /* swap nahi hua, purana meal rehta hai */
   }
 }
@@ -559,7 +586,13 @@ export function MealsProvider({ children }: { children: ReactNode }) {
       );
     } else if (modal.type === "swap-list") {
       content = (
-        <SwapMeal slots={slots} meals={meals} onPick={pickSwapSlot} onClose={closeModal} />
+        <SwapMeal
+          slots={slots}
+          meals={meals}
+          logged={day.logged}
+          onPick={pickSwapSlot}
+          onClose={closeModal}
+        />
       );
     } else {
       content = (

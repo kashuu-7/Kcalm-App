@@ -17,6 +17,7 @@ const bricolage = Bricolage_Grotesque({
 type SwapMealProps = {
   slots: MealSlot[];
   meals: Meal[];
+  logged: boolean[];
   onPick: (index: number) => void;
   onClose: () => void;
 };
@@ -24,6 +25,7 @@ type SwapMealProps = {
 export default function SwapMeal({
   slots,
   meals,
+  logged,
   onPick,
   onClose,
 }: SwapMealProps) {
@@ -77,8 +79,9 @@ export default function SwapMeal({
             <button
               key={slot.id}
               type="button"
+              disabled={logged[i]}
               onClick={() => onPick(i)}
-              className="grid grid-cols-[64px_minmax(0,1fr)_auto] max-sm:grid-cols-[52px_minmax(0,1fr)_auto] gap-[14px] max-sm:gap-[10px] items-center p-2.5 rounded-2xl border-[1.5px] border-[#1d2a2214] text-left w-full cursor-pointer transition-all duration-200 hover:bg-[#E9F6EC] hover:border-[#4E9E5C]"
+              className="grid grid-cols-[64px_minmax(0,1fr)_auto] max-sm:grid-cols-[52px_minmax(0,1fr)_auto] gap-[14px] max-sm:gap-[10px] items-center p-2.5 rounded-2xl border-[1.5px] border-[#1d2a2214] text-left w-full transition-all duration-200 enabled:cursor-pointer enabled:hover:bg-[#E9F6EC] enabled:hover:border-[#4E9E5C] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div
                 className="w-[64px] h-[54px] max-sm:w-[52px] max-sm:h-[46px] rounded-xl relative overflow-hidden"
@@ -99,6 +102,7 @@ export default function SwapMeal({
                 <small className="text-[12.5px] text-[#8E978F] ">
                   {meals[i].name}
                 </small>
+                {logged[i] && <small className="block text-[11px] text-[#4E9E5C]">Already logged</small>}
               </span>
               <ChevronRight size={16} />
             </button>
