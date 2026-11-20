@@ -2,17 +2,20 @@ export class ApiError extends Error {
   status: number;
   code?: string;
   details?: Record<string, unknown>;
+  retryAfter?: number; // seconds; 429 par server batata hai kitni der baad try karna hai
 
   constructor(
     status: number,
     message: string,
     code?: string,
     details?: Record<string, unknown>,
+    retryAfter?: number,
   ) {
     super(message);
     this.status = status;
     this.code = code;
     this.details = details;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -68,7 +71,8 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    const e = (data as ErrorBody | null)?.error;
+        const e = (data as ErrorBody | null)?.error;
+    const ra = Number(res.headers.get("Retry-After"));
     throw new ApiError(
       res.status,
       validationMessage(e?.details) ??
@@ -76,6 +80,7 @@ export async function apiFetch<T>(
         "Something went wrong. Please try again.",
       e?.code,
       e?.details,
+      Number.isFinite(ra) && ra > 0 ? ra : undefined,
     );
   }
   return data as T;

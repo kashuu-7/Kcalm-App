@@ -15,9 +15,10 @@ const bricolage = Bricolage_Grotesque({
 
 export default function Profile() {
   const { profile, openEdit } = useProfile();
-    const avatarSrc = useAvatarSrc();
+  const avatarSrc = useAvatarSrc();
   const fileRef = useRef<HTMLInputElement>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   const onPickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -25,16 +26,35 @@ export default function Profile() {
     if (!file) return;
     try {
       setPhotoError(null);
-      await setAvatarFromFile(file);
+      setPhotoBusy(true);
+      await setAvatarFromFile(file); // resize + backend par upload
     } catch (err) {
-      setPhotoError(err instanceof Error ? err.message : "Couldn't save the photo.");
+      setPhotoError(
+        err instanceof Error ? err.message : "Couldn't save the photo.",
+      );
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const onRemovePhoto = async () => {
+    try {
+      setPhotoError(null);
+      setPhotoBusy(true);
+      await removeAvatar(); // backend se delete
+    } catch (err) {
+      setPhotoError(
+        err instanceof Error ? err.message : "Couldn't remove the photo.",
+      );
+    } finally {
+      setPhotoBusy(false);
     }
   };
 
   return (
     <article className="bg-white border border-[#1d2a2214] rounded-[24px] p-[22px] shadow-[var(--shadow)] min-w-0">
       <div className="flex items-center gap-[18px] flex-wrap">
-                <div className="relative flex-none">
+        <div className="relative flex-none">
           <Avatar
             name={profile.name}
             className="w-[76px] h-[76px]"
@@ -43,7 +63,10 @@ export default function Profile() {
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            aria-label={avatarSrc ? "Change profile photo" : "Upload profile photo"}
+            disabled={photoBusy}
+            aria-label={
+              avatarSrc ? "Change profile photo" : "Upload profile photo"
+            }
             className="absolute -bottom-[2px] -right-[2px] grid h-[28px] w-[28px] place-items-center rounded-full border border-[#1d2a2224] bg-white shadow-[var(--shadow)] cursor-pointer transition-colors duration-200 hover:bg-[#F2F5F2]"
           >
             <Camera size={14} />
@@ -71,16 +94,18 @@ export default function Profile() {
               {profile.calories.toLocaleString("en-US")} kcal/day target
             </span>
           </div>
-                    {(avatarSrc || photoError) && (
+          {(avatarSrc || photoError || photoBusy) && (
             <p className="mt-[8px] text-[12px] text-[#8E978F]">
-              {photoError ? (
+              {photoBusy ? (
+                <span role="status">Saving photo…</span>
+              ) : photoError ? (
                 <span role="alert" className="text-[#C2415C]">
                   {photoError}
                 </span>
               ) : (
                 <button
                   type="button"
-                  onClick={removeAvatar}
+                  onClick={onRemovePhoto}
                   className="underline cursor-pointer hover:text-[#1D2A22]"
                 >
                   Remove photo
@@ -102,25 +127,33 @@ export default function Profile() {
 
       <div className="grid grid-cols-5 gap-[10px] mt-5 pt-[18px] border-t border-[#1d2a2214] max-[600px]:grid-cols-2">
         <div className="text-center">
-          <b className={`${bricolage.className} text-[22px] tracking-[-.03em] block tabular-nums`}>
+          <b
+            className={`${bricolage.className} text-[22px] tracking-[-.03em] block tabular-nums`}
+          >
             {profile.age}
           </b>
           <small className="text-[#8E978F] text-[12px]">Age</small>
         </div>
         <div className="text-center">
-          <b className={`${bricolage.className} text-[22px] tracking-[-.03em] block tabular-nums`}>
+          <b
+            className={`${bricolage.className} text-[22px] tracking-[-.03em] block tabular-nums`}
+          >
             {profile.sex}
           </b>
           <small className="text-[#8E978F] text-[12px]">Sex</small>
         </div>
         <div className="text-center">
-          <b className={`${bricolage.className} text-[22px] tracking-[-.03em] block tabular-nums`}>
+          <b
+            className={`${bricolage.className} text-[22px] tracking-[-.03em] block tabular-nums`}
+          >
             {profile.height} cm
           </b>
           <small className="text-[#8E978F] text-[12px]">Height</small>
         </div>
         <div className="text-center">
-          <b className={`${bricolage.className} text-[22px] tracking-[-.03em] block tabular-nums`}>
+          <b
+            className={`${bricolage.className} text-[22px] tracking-[-.03em] block tabular-nums`}
+          >
             {profile.weight} kg
           </b>
           <small className="text-[#8E978F] text-[12px]">Weight</small>
@@ -133,7 +166,9 @@ export default function Profile() {
             Your goal
             <ChevronRight size={13} />
           </span>
-          <b className={`${bricolage.className} text-[14px] tracking-[-.03em] block`}>
+          <b
+            className={`${bricolage.className} text-[14px] tracking-[-.03em] block`}
+          >
             {profile.goal}
           </b>
         </Link>

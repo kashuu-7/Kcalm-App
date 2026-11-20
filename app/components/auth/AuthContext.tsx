@@ -11,6 +11,7 @@ import {
 import * as api from "./authApi";
 import type { AuthUser } from "./authApi";
 import { setStorageOwner } from "../../lib/userStorage";
+import { syncAvatarFromServer } from "../profile/avatarStore";
 
 type Status = "loading" | "authenticated" | "unauthenticated";
 
@@ -39,7 +40,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     api.getSession().then((u) => {
   if (cancelled) return;
-  setStorageOwner(u?.email ?? null);   
+  setStorageOwner(u?.email ?? null);  
+    if (u) void syncAvatarFromServer(u.avatar ?? null); 
   setUser(u);
   setStatus(u ? "authenticated" : "unauthenticated");
 });
@@ -51,7 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback<AuthContextValue["signIn"]>(async (input) => {
   const u = await api.signIn(input);
-  setStorageOwner(u.email);            
+  setStorageOwner(u.email);  
+    void syncAvatarFromServer(u.avatar ?? null);          
   setUser(u);
   setStatus("authenticated");
   return u;
@@ -59,7 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = useCallback<AuthContextValue["signUp"]>(async (input) => {
   const u = await api.signUp(input);
-  setStorageOwner(u.email);            
+  setStorageOwner(u.email);    
+    void syncAvatarFromServer(u.avatar ?? null);        
   setUser(u);
   setStatus("authenticated");
   return u;

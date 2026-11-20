@@ -25,6 +25,7 @@ type BackendUser = {
   email: string;
   full_name: string | null;
   is_active: boolean;
+    avatar?: string | null;
 };
 
 const PROFILE_KEY = "kcalm-profile";
@@ -41,7 +42,7 @@ function toUser(u: BackendUser): AuthUser {
   } catch {
     /* ignore */
   }
-  return { id: u.id, email: u.email, name };
+    return { id: u.id, email: u.email, name, avatar: u.avatar ?? null };
 }
 
 // Forms AuthError pakadte hain, to backend ke errors ko wahi bana do

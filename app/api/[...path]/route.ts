@@ -146,9 +146,16 @@ async function handler(req: NextRequest, ctx: Ctx) {
   if (upstream.status === 401 && token) clearTokens(store);
   if (upstream.status === 204) return new NextResponse(null, { status: 204 });
 
+    const headers: Record<string, string> = {
+    "Content-Type": upstream.headers.get("content-type") ?? "application/json",
+  };
+  // 429 par browser ko bhi pata chale kitni der baad dobara try karna hai
+  const retryAfter = upstream.headers.get("retry-after");
+  if (retryAfter) headers["Retry-After"] = retryAfter;
+
   return new NextResponse(await upstream.arrayBuffer(), {
     status: upstream.status,
-    headers: { "Content-Type": upstream.headers.get("content-type") ?? "application/json" },
+    headers,
   });
 }
 

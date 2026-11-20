@@ -1,4 +1,9 @@
-export type AuthUser = { id: string; name: string; email: string };
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string | null; // backend ki photo (data URL), na ho to null
+};
 
 export class AuthError extends Error {}
 
